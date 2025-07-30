@@ -18,8 +18,9 @@ import EditSectionModal from '@/components/modal/EditSectionModal'
 
 import { STATIC_QUESTION_TYPES } from '@/lib/staticTypes'
 import { deleteForm, updateForm, deleteQuestion, getCategories, getSections, reorderQuestions, reorderSections, reorderChoices, deleteSection, copyQuestion } from '@/lib/api'
-import { Category, Section, Question, QuestionType, Choice } from '@/types'
+import { Category, Section, Question, QuestionType, Choice, Form } from '@/types'
 import { QuestionTypeName } from '@/types/enum'
+import { getFormStatus } from '@/lib/formUtils'
 
 export default function FormPage() {
   const { id: formId } = useParams()
@@ -31,6 +32,7 @@ export default function FormPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [sections, setSections] = useState<Section[]>([]) 
   const [questions, setQuestions] = useState<Question[]>([])
+  const [form, setForm] = useState<Form | null>(null)
   const [showAddSection, setShowAddSection] = useState(false)
   const [showAddCategory, setShowAddCategory] = useState(false)
   
@@ -77,6 +79,36 @@ export default function FormPage() {
       newQuestionRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [isAddingQuestion])
+
+  // Fetch form data for deadline status
+  useEffect(() => {
+    const fetchFormData = async () => {
+      try {
+        const token = localStorage.getItem('token') || localStorage.getItem('access_token')
+        if (!token) {
+          router.push('/')
+          return
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        
+        if (response.ok) {
+          const formData = await response.json()
+          setForm(formData)
+        }
+      } catch (error) {
+        console.error('Error fetching form data:', error)
+      }
+    }
+
+    if (formId) {
+      fetchFormData()
+    }
+  }, [formId, router])
 
   const handleDeleteSection = async (sectionId: string) => {
     setDeletingSections(prev => ({...prev, [sectionId]: true}));
@@ -434,6 +466,33 @@ export default function FormPage() {
               )}
             </p>
             {comment && <p className="mt-2 text-gray-500 text-sm">{comment}</p>}
+            
+            {/* Form Status */}
+            {form && (
+              <div className="mt-4">
+                {(() => {
+                  const formStatus = getFormStatus(form)
+                  return (
+                    <div className="flex items-center gap-4">
+                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${formStatus.statusColor.replace('text-', 'bg-').replace('-600', '-100')} ${formStatus.statusColor}`}>
+                        {formStatus.statusText}
+                      </div>
+                      {form.deadline && (
+                        <div className="text-sm text-gray-600">
+                          Deadline: {new Date(form.deadline).toLocaleDateString('id-ID', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
           </div>
         </div>
 

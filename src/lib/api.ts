@@ -151,6 +151,10 @@ export async function createForm(data: {
   title: string
   description?: string
   comment?: string
+  opened_date?: string
+  deadline?: string
+  is_active?: boolean
+  deadline_message?: string
 }) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms`, {
     method: 'POST',
@@ -184,6 +188,10 @@ export async function updateForm(id: string, data: Partial<{
   title: string
   description?: string
   comment?: string
+  opened_date?: string
+  deadline?: string
+  is_active?: boolean
+  deadline_message?: string
 }>) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${id}`, {
     method: 'PUT',
@@ -928,6 +936,8 @@ export async function getFormAnswers(formId: string, nik: string, sequence: stri
   if (data && typeof data === 'object') return [data];
   return [];
 }
+
+
 
 export async function createTemplateQuestions(formId: string, templateQuestions: any[]) {
   console.log('Creating template questions for form:', formId)

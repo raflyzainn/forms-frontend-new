@@ -13,6 +13,7 @@ import FormCardUser from '@/components/forms/user/FormCardUser'
 import HomepageHeader from '@/components/common/HomepageHeader'
 import EditFormModal from '@/components/modal/EditFormModal'
 import CreateFormModal from '@/components/modal/CreateFormModal'
+import { getFormStatus } from '@/lib/formUtils'
 
 export default function HomePage() {
   const [forms, setForms] = useState<Form[]>([])
@@ -20,6 +21,17 @@ export default function HomePage() {
   const [editingForm, setEditingForm] = useState<Form | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const router = useRouter()
+
+  // Separate forms by status
+  const activeForms = forms.filter(form => {
+    const status = getFormStatus(form)
+    return status.isActive && !status.isExpired
+  })
+  
+  const inactiveForms = forms.filter(form => {
+    const status = getFormStatus(form)
+    return !status.isActive || status.isExpired
+  })
 
   useEffect(() => {
     async function fetchForms() {
@@ -103,7 +115,7 @@ export default function HomePage() {
             <HomepageHeader showResponsesButton={false} />
 
             {/* Form Status Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 mt-8 max-w-2xl mx-auto ">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 mt-8 max-w-4xl mx-auto">
               <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                 <div className="flex items-center">
                   <div className="p-2 bg-blue-100 rounded-lg mr-3">
@@ -123,7 +135,19 @@ export default function HomePage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-600">Aktif</p>
-                    <p className="text-xl font-bold text-gray-900">{forms.length}</p>
+                    <p className="text-xl font-bold text-gray-900">{activeForms.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                <div className="flex items-center">
+                  <div className="p-2 bg-red-100 rounded-lg mr-3">
+                    <FiFileText className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Nonaktif/Berakhir</p>
+                    <p className="text-xl font-bold text-gray-900">{inactiveForms.length}</p>
                   </div>
                 </div>
               </div>
@@ -163,21 +187,21 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Daftar Form Section */}
+            {/* Daftar Form Aktif Section */}
             <div className="mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Daftar Form</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Daftar Form Aktif</h2>
 
-              {forms.length === 0 ? (
+              {activeForms.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                     <FiFileText className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Belum ada form</h3>
-                  <p className="text-gray-600">Form akan muncul di sini setelah dibuat</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Belum ada form aktif</h3>
+                  <p className="text-gray-600">Form aktif akan muncul di sini</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {forms.map((form) => (
+                  {activeForms.map((form) => (
                     <FormCardUser
                       key={form.id}
                       form={form}
@@ -188,6 +212,23 @@ export default function HomePage() {
                 </div>
               )}
             </div>
+
+            {/* Daftar Form Nonaktif/Berakhir Section */}
+            {inactiveForms.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Form Nonaktif/Berakhir</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {inactiveForms.map((form) => (
+                    <FormCardUser
+                      key={form.id}
+                      form={form}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

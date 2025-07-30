@@ -16,6 +16,10 @@ export default function CreateFormModal({ onClose, onCreated }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [comment, setComment] = useState('')
+  const [openedDate, setOpenedDate] = useState('')
+  const [deadline, setDeadline] = useState('')
+  const [isActive, setIsActive] = useState(true)
+  const [deadlineMessage, setDeadlineMessage] = useState('')
   const [useTemplate, setUseTemplate] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +36,15 @@ export default function CreateFormModal({ onClose, onCreated }: Props) {
     setError(null)
 
     try {
-      const newForm = await createForm({ title, description, comment })
+      const newForm = await createForm({ 
+        title, 
+        description, 
+        comment,
+        opened_date: openedDate || undefined,
+        deadline: deadline || undefined,
+        is_active: isActive,
+        deadline_message: deadlineMessage || undefined
+      })
       
       // Create template questions if checkbox is checked
       if (useTemplate) {
@@ -61,20 +73,23 @@ export default function CreateFormModal({ onClose, onCreated }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm transition-opacity duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm transition-opacity duration-200 p-4">
       <div
-        className={`bg-white rounded-lg p-6 w-full max-w-md shadow-lg transform transition-all duration-200 ${
+        className={`bg-white rounded-lg w-full max-w-md shadow-lg transform transition-all duration-200 max-h-[90vh] flex flex-col ${
           visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         }`}
       >
-        <h2 className="text-lg font-semibold mb-2 text-gray-800 text-center">Buat Form Baru</h2>
-        <p className="text-sm text-gray-600 text-center mb-4">
-          Isi informasi di bawah untuk membuat form baru.
-        </p>
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold mb-2 text-gray-800 text-center">Buat Form Baru</h2>
+          <p className="text-sm text-gray-600 text-center">
+            Isi informasi di bawah untuk membuat form baru.
+          </p>
+        </div>
 
-        {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
+        <div className="flex-1 overflow-y-auto p-6">
+          {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
             placeholder="Judul Form"
@@ -96,6 +111,56 @@ export default function CreateFormModal({ onClose, onCreated }: Props) {
             onChange={(e) => setComment(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none"
           />
+
+          {/* Deadline Settings */}
+          <div className="space-y-3 border-t pt-4">
+            <h3 className="text-sm font-medium text-gray-700">Pengaturan Deadline</h3>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Tanggal Dibuka</label>
+                <input
+                  type="datetime-local"
+                  value={openedDate}
+                  onChange={(e) => setOpenedDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Deadline</label>
+                <input
+                  type="datetime-local"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label htmlFor="isActive" className="text-sm text-gray-700">
+                Form aktif
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Pesan Deadline (Opsional)</label>
+              <input
+                type="text"
+                placeholder="Contoh: Form akan ditutup pada 15 Februari 2025"
+                value={deadlineMessage}
+                onChange={(e) => setDeadlineMessage(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none text-sm"
+              />
+            </div>
+          </div>
 
           {/* Template Checkbox */}
           <div className="flex items-center space-x-2">
@@ -144,6 +209,7 @@ export default function CreateFormModal({ onClose, onCreated }: Props) {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   )

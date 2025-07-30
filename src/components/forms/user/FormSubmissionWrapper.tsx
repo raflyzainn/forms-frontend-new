@@ -120,15 +120,21 @@ export default function FormSubmissionWrapper({ questions, nik, formId, headerPr
         answer: any
       }[] = []
 
-      const documentUploads: {
-        questionId: string
-        files: File[]
-      }[] = []
+
 
       for (const [questionId, { type, answer }] of Object.entries(answers)) {
         const typeObj = STATIC_QUESTION_TYPES.find(t => t.type === type)
-        const files = Array.isArray(answer?.files) ? answer.files : (answer?.file ? [answer.file] : []);
         if ((type === "7" || typeObj?.name === 'Document Upload')) {
+          // Handle document uploads
+          if (answer?.fileId) {
+            // If there's a fileId, it means a file was uploaded
+            // We need to submit this as a normal response with the fileId
+            normalResponses.push({
+              questionId,
+              questionType: 7, // Document Upload type
+              answer: { value: answer.fileId }
+            })
+          }
           continue;
         } else {
           let formattedAnswer: any = {}
@@ -197,12 +203,7 @@ export default function FormSubmissionWrapper({ questions, nik, formId, headerPr
         })
       }
 
-      if (documentUploads.length > 0) {
-        const uploadPromises = documentUploads.map(({ questionId, files }) =>
-          uploadDocument({ files, nik, questionId })
-        )
-        await Promise.all(uploadPromises)
-      }
+      // Document uploads are now handled as normal responses with fileId
 
       try {
         const session_id = localStorage.getItem('session_id');

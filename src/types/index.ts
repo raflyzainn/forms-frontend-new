@@ -3,6 +3,10 @@ export interface Form {
   title: string
   description?: string
   comment?: string
+  opened_date?: string
+  deadline?: string
+  is_active?: boolean
+  deadline_message?: string
   created_time: string
   updated_time?: string
 }
