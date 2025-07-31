@@ -74,6 +74,7 @@ export default function UserFormPage() {
         <HomepageHeader
           showResponsesButton={false}
           showCreateFormButton={false}
+          isAdminPage={false}
         />
 
         {questions.length > 0 && nik ? (

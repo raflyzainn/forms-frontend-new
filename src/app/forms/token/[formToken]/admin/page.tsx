@@ -88,7 +88,7 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
     return (
       <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
-          <HomepageHeader />
+          <HomepageHeader isAdminPage={true} />
           <div className="bg-white p-6 rounded-lg shadow text-center">
             <p>Loading...</p>
           </div>
@@ -101,7 +101,7 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
     return (
       <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
-          <HomepageHeader />
+          <HomepageHeader isAdminPage={true} />
           <div className="bg-white p-6 rounded-lg shadow text-center">
             <p className="text-red-600">{error}</p>
             <button
@@ -120,7 +120,7 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
     return (
       <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
-          <HomepageHeader />
+          <HomepageHeader isAdminPage={true} />
           <div className="bg-white p-6 rounded-lg shadow text-center">
             <p>Form tidak ditemukan</p>
           </div>
@@ -132,7 +132,7 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
-        <HomepageHeader />
+        <HomepageHeader isAdminPage={true} />
         
         <div className="bg-white p-6 rounded-lg shadow mt-15">
           <h1 className="text-2xl font-bold mb-4">{form.title}</h1>

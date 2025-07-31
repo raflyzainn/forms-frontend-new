@@ -47,7 +47,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <HomepageHeader showResponsesButton={false} showCreateFormButton={false} />
+      <HomepageHeader showResponsesButton={false} showCreateFormButton={false} isAdminPage={false} />
       
       <div className="pt-24 pb-12 px-4">
         <div className="max-w-4xl mx-auto">

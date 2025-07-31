@@ -61,7 +61,7 @@ export default function UserResponsesListPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <HomepageHeader />
+      <HomepageHeader isAdminPage={false} />
       
       <div className="max-w-4xl mx-auto px-4 pt-4 pb-8 mt-17">
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">

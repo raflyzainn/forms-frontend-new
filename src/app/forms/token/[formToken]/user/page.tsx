@@ -108,6 +108,7 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
         <HomepageHeader
           showResponsesButton={false}
           showCreateFormButton={false}
+          isAdminPage={false}
         />
 
         {questions.length > 0 && nik && form ? (

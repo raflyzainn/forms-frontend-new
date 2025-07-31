@@ -423,7 +423,7 @@ export default function FormPage() {
             </div>
           </div>
         </div>
-        <HomepageHeader showResponsesButton={false} />
+        <HomepageHeader showResponsesButton={false} isAdminPage={true} />
         <div className="bg-white shadow-lg rounded-lg overflow-hidden mb-8 border border-gray-200 mt-8">
           <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
             <div className="flex justify-between items-center">

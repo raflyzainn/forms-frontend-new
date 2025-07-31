@@ -12,9 +12,10 @@ interface SidebarProps {
   setShowSidebar: (value: boolean) => void
   onCreateForm: () => void
   showCreateFormButton?: boolean
+  isAdminPage?: boolean
 }
 
-export default function Sidebar({ showSidebar, setShowSidebar, onCreateForm, showCreateFormButton = true }: SidebarProps) {
+export default function Sidebar({ showSidebar, setShowSidebar, onCreateForm, showCreateFormButton = true, isAdminPage = false }: SidebarProps) {
   const sidebarRef = useRef(null)
   const router = useRouter()
   const { id: formId } = useParams() as { id?: string }
@@ -67,7 +68,7 @@ export default function Sidebar({ showSidebar, setShowSidebar, onCreateForm, sho
         if (response.ok) {
           toast.success('Berhasil logout');
         } else {
-          toast.error('Logout gagal: ' + (result.message || 'Gagal logout'));
+          toast.error('Logout gagal: ' + ((result as any).message || 'Gagal logout'));
         }
       }
     } catch (e) {
@@ -134,23 +135,8 @@ export default function Sidebar({ showSidebar, setShowSidebar, onCreateForm, sho
               <span className="font-medium">Beranda</span>
             </button>
 
-            {showCreateFormButton && (
-              <button
-                onClick={() => {
-                  onCreateForm()
-                  setShowSidebar(false)
-                }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-green-50 text-gray-700 hover:text-green-700 transition-all duration-200 group"
-              >
-                <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
-                  <FaPlusCircle className="text-green-600" />
-                </div>
-                <span className="font-medium">Buat Form Baru</span>
-              </button>
-            )}
-
-            {/* User Responses Menu - Only show when on a form page */}
-            {formId && (
+            {/* User Responses Menu - Only show when on a form page and NOT admin page */}
+            {formId && !isAdminPage && (
               <button
                 onClick={() => {
                   router.push(`/forms/${formId}/user-responses`)

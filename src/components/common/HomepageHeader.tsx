@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from './SideBar'
 import CreateFormModal from '../modal/CreateFormModal'
 
-export default function HomepageHeader({ showResponsesButton = true, showCreateFormButton = true }: { showResponsesButton?: boolean, showCreateFormButton?: boolean }) {
+export default function HomepageHeader({ showResponsesButton = true, showCreateFormButton = true, isAdminPage = false }: { showResponsesButton?: boolean, showCreateFormButton?: boolean, isAdminPage?: boolean }) {
   const [showSidebar, setShowSidebar] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [userData, setUserData] = useState<any>(null)
@@ -49,6 +49,7 @@ export default function HomepageHeader({ showResponsesButton = true, showCreateF
         setShowSidebar={setShowSidebar}
         onCreateForm={() => setShowCreateForm(true)}
         showCreateFormButton={showCreateFormButton}
+        isAdminPage={isAdminPage}
       />
 
       {showCreateForm && (

@@ -924,6 +924,56 @@ export async function getFormSubmissions(formId: string) {
   return res.json();
 }
 
+export async function exportFormToCSV(formId: string) {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formId}/export-csv`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal export CSV')
+  }
+
+  // Get the blob from response
+  const blob = await res.blob()
+  
+  // Create download link
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `form-responses-${formId}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+export async function exportFormToCSVEmail(formId: string, email: string) {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formId}/export-csv-email`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal export CSV via email')
+  }
+
+  return res.json()
+}
+
 export async function getFormAnswers(formId: string, nik: string, sequence: string) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formId}/answers/${nik}?sequence=${sequence}`);
   if (!res.ok) {

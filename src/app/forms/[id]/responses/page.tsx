@@ -2,16 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { getFormSubmissions } from '@/lib/api'
+import { toast, ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import { getFormSubmissions, exportFormToCSV, exportFormToCSVEmail } from '@/lib/api'
 import { Submission } from '@/types'
 import HomepageHeader from '@/components/common/HomepageHeader'
-import { FiUsers, FiClock, FiArrowRight } from 'react-icons/fi'
+import ExportCSVModal from '@/components/modal/ExportCSVModal'
+import { FiUsers, FiClock, FiArrowRight, FiDownload } from 'react-icons/fi'
 
 export default function ResponsesListPage() {
   const router = useRouter()
   const { id: formId } = useParams()
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -27,6 +32,38 @@ export default function ResponsesListPage() {
       setError(err instanceof Error ? err.message : 'Gagal mengambil submissions')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleExportBrowser = async () => {
+    try {
+      setExporting(true)
+      setError(null)
+      await exportFormToCSV(formId as string)
+      setShowExportModal(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal export CSV')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleExportEmail = async (email: string) => {
+    try {
+      setError(null)
+      setShowExportModal(false)
+      
+      // Kirim request tanpa menunggu response (fire and forget)
+      exportFormToCSVEmail(formId as string, email)
+        .then(() => {
+          toast.success('CSV berhasil dikirim ke email Anda!')
+        })
+        .catch((err) => {
+          toast.error(err.message || 'Gagal export CSV via email')
+        })
+        
+    } catch (err) {
+      toast.error('Gagal mengirim request export CSV')
     }
   }
 
@@ -54,18 +91,31 @@ export default function ResponsesListPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <HomepageHeader />
+      <HomepageHeader isAdminPage={true} />
       
       <div className="max-w-4xl mx-auto px-4 pt-4 pb-8 mt-17">
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FiUsers className="text-2xl text-blue-600" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiUsers className="text-2xl text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">Daftar Responses</h1>
+                <p className="text-gray-600">Lihat semua submission yang telah dikirim</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">Daftar Responses</h1>
-              <p className="text-gray-600">Lihat semua submission yang telah dikirim</p>
-            </div>
+            
+            {submissions.length > 0 && (
+              <button
+                onClick={() => setShowExportModal(true)}
+                disabled={exporting}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                <FiDownload className="text-lg" />
+                Export CSV
+              </button>
+            )}
           </div>
           
           <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -74,6 +124,12 @@ export default function ResponsesListPage() {
               <span>Total: {submissions.length} submission</span>
             </div>
           </div>
+          
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -120,6 +176,29 @@ export default function ResponsesListPage() {
           )}
         </div>
       </div>
+
+      {/* Export CSV Modal */}
+      <ExportCSVModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExportBrowser={handleExportBrowser}
+        onExportEmail={handleExportEmail}
+        exporting={exporting}
+        isEmailExporting={false}
+      />
+
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   )
 } 
