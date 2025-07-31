@@ -814,7 +814,6 @@ export async function submitAnswers({
     credentials: 'include'
   })
   
-
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/answer`, {
     method: 'POST',
     headers: {
@@ -937,6 +936,32 @@ export async function getFormAnswers(formId: string, nik: string, sequence: stri
   return [];
 }
 
+export async function getSubmissionById(submissionId: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/submissions/${submissionId}`);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal mengambil submission');
+  }
+  return res.json();
+}
+
+export async function updateSubmission(submissionId: string, answers: any[]) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/submissions/${submissionId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ answers }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal mengupdate submission');
+  }
+
+  return res.json();
+}
+
 
 
 export async function createTemplateQuestions(formId: string, templateQuestions: any[]) {
@@ -1011,4 +1036,67 @@ export async function createTemplateQuestions(formId: string, templateQuestions:
     console.error('Error creating template questions:', error)
     throw error
   }
+}
+
+{/* Bagian Custom URL */}
+
+export async function createCustomURL(formId: string, data: {
+  custom_slug: string
+  redirect_type: 'user' | 'admin'
+}) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formId}/custom-url`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal membuat custom URL')
+  }
+
+  return res.json()
+}
+
+export async function getFormWithCustomURLs(formId: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formId}`)
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal mengambil detail form')
+  }
+  const data = await res.json()
+  
+  // Transform response to match our expected format
+  return {
+    form: {
+      ...data.form,
+      custom_urls: data.custom_urls || [],
+      is_open: data.is_open,
+      status: data.status
+    }
+  }
+}
+
+export async function resolveCustomURL(customSlug: string) {
+  const res = await fetch(`/api/${customSlug}`)
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Custom URL tidak ditemukan')
+  }
+  return res.json()
+}
+
+export async function deleteCustomURL(customURLId: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/custom-urls/${customURLId}`, {
+    method: 'DELETE',
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal menghapus custom URL')
+  }
+
+  return res.json()
 }

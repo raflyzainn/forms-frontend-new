@@ -19,9 +19,29 @@ interface Props {
     description?: string | null
     comment?: string | null
   }
+  preFilledAnswers?: Array<{
+    questionId: string
+    value: string | null
+    choiceIds: string[]
+    documents: Array<{
+      document_id: string
+      file_name: string
+      path: string
+    }>
+  }>
+  isEditMode?: boolean
+  onSubmit?: (responses: any[]) => Promise<void>
 }
 
-export default function FormSubmissionWrapper({ questions, nik, formId, headerProps }: Props) {
+export default function FormSubmissionWrapper({ 
+  questions, 
+  nik, 
+  formId, 
+  headerProps, 
+  preFilledAnswers = [], 
+  isEditMode = false, 
+  onSubmit 
+}: Props) {
   const [answers, setAnswers] = useState<
     Record<string, { type: string; answer: any }>
   >({})
@@ -49,12 +69,49 @@ export default function FormSubmissionWrapper({ questions, nik, formId, headerPr
         toast.error('Gagal memuat draft');
       }
     }
-    loadDraft();
-  }, [nik, formId, questions]);
+    
+    // If in edit mode, pre-fill with existing answers
+    if (isEditMode && preFilledAnswers.length > 0) {
+      const preFilledData: Record<string, { type: string; answer: any }> = {}
+      
+      preFilledAnswers.forEach(preFilled => {
+        const question = questions.find(q => q.questionId === preFilled.questionId)
+        if (question) {
+          const questionType = question.type?.name || 'Text'
+          
+          let answer: any = {}
+          
+          if (preFilled.value) {
+            answer.value = preFilled.value
+          }
+          
+          if (preFilled.choiceIds && preFilled.choiceIds.length > 0) {
+            answer.choiceIds = preFilled.choiceIds
+          }
+          
+          if (preFilled.documents && preFilled.documents.length > 0) {
+            answer.documents = preFilled.documents
+          }
+          
+          preFilledData[preFilled.questionId] = {
+            type: questionType,
+            answer
+          }
+        }
+      })
+      
+      setAnswers(preFilledData)
+      draftLoadedRef.current = true
+    } else {
+      loadDraft();
+    }
+  }, [nik, formId, questions, isEditMode, preFilledAnswers]);
 
   useEffect(() => {
     if (!nik || !formId) return
     if (Object.keys(debouncedAnswers).length === 0) return
+    // Don't auto-save draft in edit mode
+    if (isEditMode) return
 
     const saveDraft = async () => {
       setIsSaving(true)
@@ -87,7 +144,7 @@ export default function FormSubmissionWrapper({ questions, nik, formId, headerPr
     }
 
     saveDraft()
-  }, [debouncedAnswers, nik, formId])
+  }, [debouncedAnswers, nik, formId, isEditMode])
 
   const handleAnswerChange = (
     questionId: string,
@@ -110,6 +167,32 @@ export default function FormSubmissionWrapper({ questions, nik, formId, headerPr
 
       if (unansweredMandatory.length > 0) {
         alert(`Mohon isi pertanyaan wajib berikut:\n${unansweredMandatory.map(q => `- ${q.title}`).join('\n')}`)
+        setSubmitting(false)
+        return
+      }
+
+      // If in edit mode and custom onSubmit is provided, use it
+      if (isEditMode && onSubmit) {
+        const responses = Object.entries(answers).map(([questionId, { type, answer }]) => {
+          const response: any = {
+            questionId,
+            type,
+            ...answer
+          }
+          
+          // Handle documents properly for edit mode
+          if (answer?.documents && Array.isArray(answer.documents)) {
+            // Keep documents as they are - existing as objects, new uploads as strings
+            response.documents = answer.documents
+          } else if (answer?.fileId) {
+            // If there's a fileId from temp upload, include it
+            response.documents = [answer.fileId]
+          }
+          
+          return response
+        })
+        
+        await onSubmit(responses)
         setSubmitting(false)
         return
       }
@@ -305,7 +388,7 @@ export default function FormSubmissionWrapper({ questions, nik, formId, headerPr
           disabled={submitting}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? 'Mengirim...' : 'Kirim Formulir'}
+          {submitting ? 'Mengirim...' : (isEditMode ? 'Update Submission' : 'Kirim Formulir')}
         </button>
       </div>
     </div>

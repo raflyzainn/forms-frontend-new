@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { getFormSubmissions } from '@/lib/api'
 import { Submission } from '@/types'
 import HomepageHeader from '@/components/common/HomepageHeader'
-import { FiUsers, FiClock, FiArrowRight, FiFileText } from 'react-icons/fi'
+import { FiUsers, FiClock, FiArrowRight, FiFileText, FiEdit } from 'react-icons/fi'
 
 export default function UserResponsesListPage() {
   const router = useRouter()
@@ -137,9 +137,21 @@ export default function UserResponsesListPage() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-blue-600">
-                    <span className="text-sm font-medium">Lihat Detail</span>
-                    <FiArrowRight className="text-lg" />
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        router.push(`/forms/${formId}/edit-submission/${submission.id}`)
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-sm"
+                    >
+                      <FiEdit className="w-3 h-3" />
+                      Edit Form
+                    </button>
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <span className="text-sm font-medium">Lihat Detail</span>
+                      <FiArrowRight className="text-lg" />
+                    </div>
                   </div>
                 </div>
               </div>

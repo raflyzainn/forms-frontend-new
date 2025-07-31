@@ -157,4 +157,47 @@ export interface Choice {
     documents: any[]
   }
   
+  export interface CustomURL {
+    id: string
+    form_id: string
+    form_token: string
+    custom_slug: string
+    redirect_type: 'user' | 'admin'
+    is_active: boolean
+    created_time: string
+    updated_time: string
+  }
+
+  export interface CustomURLResponse {
+    redirect_url: string
+    form_token: string
+    redirect_type: string
+    form: Form
+  }
+
+  export interface FormWithCustomURLs extends Form {
+  custom_urls?: CustomURL[]
+  is_open?: boolean
+  status?: string
+  deadline_info?: {
+    deadline: string
+    days_remaining: number
+    message: string
+  }
+}
+
+export interface FormAccessResponse {
+  form: Form
+  is_open: boolean
+  status: string
+  access_type: string
+  form_token: string
+  custom_slug: string
+  deadline_info?: {
+    deadline: string
+    days_remaining: number
+    message: string
+  }
+}
+  
   

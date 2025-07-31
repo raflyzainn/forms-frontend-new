@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 
 import FormHeader from '@/components/forms/FormHeader'
 import FormQuestionGroupAdmin from '@/components/forms/admin/QuestionGroupAdmin'
+import CustomURLModal from '@/components/modal/CustomURLModal'
 import { useFetchFormData } from '@/components/fetch/useFetchFormData'
 import HomepageHeader from '@/components/common/HomepageHeader'
 import AddQuestionForm from '@/components/forms/admin/AddQuestionForm'
@@ -17,8 +18,8 @@ import AddCategoryModal from '@/components/modal/AddCategoryModal'
 import EditSectionModal from '@/components/modal/EditSectionModal'
 
 import { STATIC_QUESTION_TYPES } from '@/lib/staticTypes'
-import { deleteForm, updateForm, deleteQuestion, getCategories, getSections, reorderQuestions, reorderSections, reorderChoices, deleteSection, copyQuestion } from '@/lib/api'
-import { Category, Section, Question, QuestionType, Choice, Form } from '@/types'
+import { deleteForm, updateForm, deleteQuestion, getCategories, getSections, reorderQuestions, reorderSections, reorderChoices, deleteSection, copyQuestion, getFormWithCustomURLs } from '@/lib/api'
+import { Category, Section, Question, QuestionType, Choice, Form, FormWithCustomURLs } from '@/types'
 import { QuestionTypeName } from '@/types/enum'
 import { getFormStatus } from '@/lib/formUtils'
 
@@ -32,9 +33,10 @@ export default function FormPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [sections, setSections] = useState<Section[]>([]) 
   const [questions, setQuestions] = useState<Question[]>([])
-  const [form, setForm] = useState<Form | null>(null)
+  const [form, setForm] = useState<FormWithCustomURLs | null>(null)
   const [showAddSection, setShowAddSection] = useState(false)
   const [showAddCategory, setShowAddCategory] = useState(false)
+  const [showCustomURLModal, setShowCustomURLModal] = useState(false)
   
   const [editingSection, setEditingSection] = useState<Section | null>(null)
   const [deletingSections, setDeletingSections] = useState<Record<string, boolean>>({})
@@ -90,16 +92,8 @@ export default function FormPage() {
           return
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        
-        if (response.ok) {
-          const formData = await response.json()
-          setForm(formData)
-        }
+        const formData = await getFormWithCustomURLs(formId as string)
+        setForm(formData.form)
       } catch (error) {
         console.error('Error fetching form data:', error)
       }
@@ -336,6 +330,15 @@ export default function FormPage() {
     }
   };
 
+  const handleFormUpdate = async () => {
+    try {
+      const formData = await getFormWithCustomURLs(formId as string)
+      setForm(formData.form)
+    } catch (error) {
+      console.error('Error refreshing form data:', error)
+    }
+  };
+
   useEffect(() => {
     async function fetchInitialData() {
       try {
@@ -433,12 +436,22 @@ export default function FormPage() {
                   title || (questions.length > 0 ? 'Form' : 'Form tidak ditemukan')
                 )}
               </h1>
-              <div className="flex space-x-2">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowCustomURLModal(true)}
+                  className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors h-10"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  Custom URL
+                </button>
+                
                 <button
                   onClick={() => router.push(`/forms/${formId}/user`)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors h-10"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
@@ -447,9 +460,9 @@ export default function FormPage() {
                 
                 <button
                   onClick={() => router.push(`/forms/${formId}/responses`)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors h-10"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Lihat Jawaban
@@ -488,6 +501,14 @@ export default function FormPage() {
                           })}
                         </div>
                       )}
+                      {form.deadline_info && (
+                        <div className="text-sm text-gray-600">
+                          {form.deadline_info.days_remaining > 0 
+                            ? `${form.deadline_info.days_remaining} hari tersisa`
+                            : 'Deadline telah lewat'
+                          }
+                        </div>
+                      )}
                     </div>
                   )
                 })()}
@@ -495,6 +516,16 @@ export default function FormPage() {
             )}
           </div>
         </div>
+
+        {/* Custom URL Modal */}
+        {showCustomURLModal && form && (
+          <CustomURLModal
+            isOpen={showCustomURLModal}
+            onClose={() => setShowCustomURLModal(false)}
+            form={form}
+            onUpdate={handleFormUpdate}
+          />
+        )}
 
 
         <FormQuestionGroupAdmin

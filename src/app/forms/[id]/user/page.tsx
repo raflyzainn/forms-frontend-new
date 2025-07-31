@@ -7,7 +7,6 @@ import HomepageHeader from '@/components/common/HomepageHeader'
 import { useFetchFormData } from '@/components/fetch/useFetchFormData'
 import FormSubmissionWrapper from '@/components/forms/user/FormSubmissionWrapper'
 import { Question, Form } from '@/types'
-import { FiFileText } from 'react-icons/fi'
 import { getFormStatus } from '@/lib/formUtils'
 
 export default function UserFormPage() {
@@ -15,7 +14,6 @@ export default function UserFormPage() {
   const [nik, setNik] = useState('')
   const [form, setForm] = useState<Form | null>(null)
   const router = useRouter()
-
   const { title, description, comment, questions, loading } =
     useFetchFormData(formId)
 
@@ -42,11 +40,11 @@ export default function UserFormPage() {
             Authorization: `Bearer ${token}`,
           },
         })
-        
+
         if (response.ok) {
           const formData = await response.json()
           setForm(formData)
-          
+
           // Check if form is expired or inactive
           const formStatus = getFormStatus(formData)
           if (!formStatus.isActive || formStatus.isExpired) {

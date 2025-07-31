@@ -6,8 +6,8 @@ import 'react-toastify/dist/ReactToastify.css'
 import { useRouter } from 'next/navigation'
 import { FiPlus, FiFileText, FiCheckCircle } from 'react-icons/fi'
 
-import { Form } from '@/types'
-import { deleteForm, updateForm } from '@/lib/api'  
+import { Form, FormWithCustomURLs } from '@/types'
+import { deleteForm, updateForm, getFormWithCustomURLs } from '@/lib/api'  
 import FormCardAdmin from '@/components/forms/admin/FormCardAdmin'
 import FormCardUser from '@/components/forms/user/FormCardUser'
 import HomepageHeader from '@/components/common/HomepageHeader'
@@ -16,7 +16,7 @@ import CreateFormModal from '@/components/modal/CreateFormModal'
 import { getFormStatus } from '@/lib/formUtils'
 
 export default function HomePage() {
-  const [forms, setForms] = useState<Form[]>([])
+  const [forms, setForms] = useState<FormWithCustomURLs[]>([])
   const [loading, setLoading] = useState(true)
   const [editingForm, setEditingForm] = useState<Form | null>(null)
   const [showCreate, setShowCreate] = useState(false)
@@ -49,7 +49,22 @@ export default function HomePage() {
         })
         if (!res.ok) throw new Error('Failed to fetch forms')
         const data = await res.json()
-        setForms(data)
+        
+        // Fetch custom URLs for each form
+        const formsWithCustomURLs = await Promise.all(
+          data.map(async (form: Form) => {
+            try {
+              const formWithCustomURLs = await getFormWithCustomURLs(form.id)
+              return formWithCustomURLs.form
+            } catch (error) {
+              console.error(`Failed to fetch custom URLs for form ${form.id}:`, error)
+              // Return original form with empty custom_urls if fetch fails
+              return { ...form, custom_urls: [] } as FormWithCustomURLs
+            }
+          })
+        )
+        
+        setForms(formsWithCustomURLs)
       } catch (err) {
         console.error('Auth or fetch failed:', err)
         toast.error('Session berakhir. Silakan login kembali. ')

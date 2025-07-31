@@ -34,33 +34,6 @@ export default function Sidebar({ showSidebar, setShowSidebar, onCreateForm, sho
     }
   }, [showSidebar])
 
-  // Fetch user data when sidebar opens
-  useEffect(() => {
-    if (showSidebar && !userData) {
-      fetchUserData()
-    }
-  }, [showSidebar, userData])
-
-  const fetchUserData = async () => {
-    try {
-      setLoadingUser(true)
-      
-      const response = await fetchWithTokenRefresh(`${process.env.NEXT_PUBLIC_API_URL}/user/me`)
-      
-      if (response.ok) {
-        const data = await response.json()
-        setUserData(data.data?.data)
-      } else {
-        console.error('Failed to fetch user data')
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error)
-      // Error is handled by fetchWithTokenRefresh (auto redirect to login)
-    } finally {
-      setLoadingUser(false)
-    }
-  }
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -196,51 +169,7 @@ export default function Sidebar({ showSidebar, setShowSidebar, onCreateForm, sho
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-100 space-y-2">
-          {/* User Info Section */}
-          {userData && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 mb-3">
-              <div className="flex items-center mb-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mr-2">
-                  <FaBuilding className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800 text-sm">{userData.name}</h3>
-                  <p className="text-xs text-gray-600">Koperasi</p>
-                </div>
-              </div>
-              
-              <div className="space-y-1">
-                <div className="flex items-center text-xs text-gray-600">
-                  <FaIdCard className="h-3 w-3 mr-2 text-gray-500" />
-                  <span>NIK: {userData.username}</span>
-                </div>
-                {userData.email && (
-                  <div className="flex items-center text-xs text-gray-600">
-                    <FaEnvelope className="h-3 w-3 mr-2 text-gray-500" />
-                    <span>{userData.email}</span>
-                  </div>
-                )}
-                {userData.koperasi_detail && (
-                  <div className="text-xs text-gray-600 mt-2 pt-2 border-t border-gray-200">
-                    <p><strong>BH No:</strong> {userData.koperasi_detail.bh_no}</p>
-                    <p><strong>Status:</strong> {userData.status}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {loadingUser && (
-            <div className="bg-gray-50 rounded-lg p-3 mb-3">
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-          )}
-
-
-          
+                    
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-red-50 text-gray-700 hover:text-red-700 transition-all duration-200 group"

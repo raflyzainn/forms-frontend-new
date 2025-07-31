@@ -1,12 +1,12 @@
 'use client'
 
-import { Form } from '@/types'
+import { Form, FormWithCustomURLs } from '@/types'
 import Link from 'next/link'
 import { FiEye, FiFileText, FiClock, FiAlertTriangle } from 'react-icons/fi'
 import { getFormStatus, formatDeadline } from '@/lib/formUtils'
 
 interface Props {
-  form: Form
+  form: FormWithCustomURLs
   onEdit: (form: Form) => void
   onDelete: (id: string) => void
 }
@@ -31,6 +31,20 @@ export default function FormCard({ form, onEdit, onDelete }: Props) {
         text: 'Form Berakhir'
       }
     }
+    
+    // Check if form has custom URLs with user redirect type
+    const userCustomURL = form.custom_urls?.find(url => url.redirect_type === 'user' && url.is_active)
+    
+    if (userCustomURL) {
+      // Use custom slug URL for better UX and security
+      return {
+        href: `/${userCustomURL.custom_slug}`,
+        className: 'w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white text-sm font-medium py-2 px-3 rounded-md hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2',
+        text: 'Lihat Form'
+      }
+    }
+    
+    // Fallback to UUID-based URL
     return {
       href: `/forms/${form.id}/user`,
       className: 'w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white text-sm font-medium py-2 px-3 rounded-md hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2',
@@ -94,6 +108,7 @@ export default function FormCard({ form, onEdit, onDelete }: Props) {
               </p>
             </div>
           )}
+
         </div>
 
         {/* Action Button - always at bottom */}

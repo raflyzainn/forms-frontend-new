@@ -24,6 +24,7 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   console.log('Question type:', question.type?.name, 'Question:', question)
 
@@ -253,10 +254,27 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
       React.useEffect(() => {
         const session_id = localStorage.getItem('session_id');
         if (!session_id) return;
-        getTempUploads(session_id)
-          .then((data) => setUploadedFiles(Array.isArray(data) ? data : data.files || []))
-          .catch((err) => setUploadError(err.message || 'Gagal mengambil file'));
-      }, [question.questionId]);
+        
+        // If we have existing documents in answer (edit mode), use them
+        if (answer?.documents && Array.isArray(answer.documents) && answer.documents.length > 0) {
+          // Transform existing documents to match uploaded files format
+          const existingDocs = answer.documents.map((doc: any) => ({
+            id: doc.document_id || doc.id,
+            filename: doc.file_name || doc.filename || doc.name,
+            name: doc.file_name || doc.filename || doc.name,
+            path: doc.path || doc.document_path,
+            form_id: formId,
+            question_id: question.questionId,
+            isExisting: true // Flag to identify existing documents
+          }));
+          setUploadedFiles(existingDocs);
+        } else {
+          // Load temp uploads for new submissions
+          getTempUploads(session_id)
+            .then((data) => setUploadedFiles(Array.isArray(data) ? data : data.files || []))
+            .catch((err) => setUploadError(err.message || 'Gagal mengambil file'));
+        }
+      }, [question.questionId, answer?.documents, formId]);
 
       const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop: async (acceptedFiles) => {
@@ -273,7 +291,9 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
               question_id: question.questionId,
             });
             const data = await getTempUploads(session_id || '');
-            setUploadedFiles(Array.isArray(data) ? data : data.files || []);
+            const files = Array.isArray(data) ? data : data.files || [];
+            setUploadedFiles(files);
+            setForceUpdate(prev => prev + 1); // Force re-render
           } catch (err: any) {
             setUploadError(err.message || 'Upload gagal');
           } finally {
@@ -289,7 +309,24 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
 
       React.useEffect(() => {
         if (filteredFiles.length > 0) {
-          onAnswerChange({ fileId: filteredFiles[0].id, filename: filteredFiles[0].filename || filteredFiles[0].name });
+          const documents = filteredFiles.map(file => {
+            if (file.path || file.isExisting) {
+              // Existing document - keep as object with document_id
+              return {
+                document_id: file.id,
+                file_name: file.filename || file.name,
+                path: file.path
+              };
+            } else {
+              // New upload - return as string ID for temp upload
+              return file.id;
+            }
+          });
+          
+          onAnswerChange({ documents });
+        } else {
+          // Clear documents if no files
+          onAnswerChange({ documents: [] });
         }
       }, [filteredFiles.length]);
 
@@ -304,44 +341,42 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
             <input {...getInputProps()} name={name} />
             {filteredFiles.length > 0 ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-center gap-2 text-gray-700 font-medium">
-                  {filteredFiles[0].filename || filteredFiles[0].name || 'File'}
-                  <button
-                    type="button"
-                    className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 disabled:opacity-50"
-                    disabled={deleting || uploading}
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      setDeleting(true);
-                      setUploadError(null);
-                      try {
-                        await deleteTempUpload(filteredFiles[0].id);
-                        const session_id = localStorage.getItem('session_id');
-                        const data = await getTempUploads(session_id || '');
-                        setUploadedFiles(Array.isArray(data) ? data : data.files || []);
-                      } catch (err: any) {
-                        setUploadError(err.message || 'Gagal menghapus file');
-                      } finally {
-                        setDeleting(false);
-                      }
-                    }}
-                  >
-                    {deleting ? 'Menghapus...' : 'Hapus'}
-                  </button>
-                </div>
+                {filteredFiles.map((file, index) => (
+                  <div key={`${file.id}-${file.filename}-${index}-${forceUpdate}`} className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-gray-700 font-medium">
+                      {file.filename || file.name || 'File'}
+
+                    </div>
                 
                 {/* File Preview */}
                 <div className="flex justify-center">
                   {(() => {
-                    const filename = filteredFiles[0].filename || filteredFiles[0].name || '';
+                    const filename = file.filename || file.name || '';
                     const isImage = filename.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i);
                     const isPdf = filename.match(/\.pdf$/i);
                     
-                    if (isImage) {
+                    // Check if this is an existing document (has path) or new upload
+                    const isExistingDocument = file.path || file.isExisting;
+                    let fileUrl: string;
+                    
+                    if (isExistingDocument) {
+                      // Existing document - use API URL
+                      fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/documents/${file.id}/download`;
+                    } else {
+                      // New upload - check if it's a File object
+                      if (file instanceof File) {
+                        fileUrl = URL.createObjectURL(file);
+                      } else {
+                        // Fallback for non-File objects
+                        fileUrl = '';
+                      }
+                    }
+                    
+                    if (isImage && fileUrl) {
                       return (
                         <div className="w-32 h-32 border rounded-lg overflow-hidden shadow-sm">
                           <img
-                            src={URL.createObjectURL(filteredFiles[0])}
+                            src={fileUrl}
                             alt={filename}
                             className="w-full h-full object-cover"
                           />
@@ -364,8 +399,56 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
                 </div>
                 
                 <div className="text-sm text-gray-500">
-                  {filteredFiles[0].filename || filteredFiles[0].name || 'File'}
+                  {file.filename || file.name || 'File'}
                 </div>
+                
+                {/* Download button for existing documents */}
+                {(file.path || file.isExisting) && (
+                  <div className="flex justify-center">
+                    <a
+                      href={`${process.env.NEXT_PUBLIC_API_URL}/documents/${file.id}/download`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition text-sm"
+                    >
+                      <FiDownload className="inline-block" />
+                      Download
+                    </a>
+                  </div>
+                )}
+                
+                {/* Delete button for new uploads */}
+                {!(file.path || file.isExisting) && (
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-600 rounded shadow hover:bg-red-200 transition text-sm"
+                      disabled={deleting || uploading}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setDeleting(true);
+                        setUploadError(null);
+                        try {
+                          await deleteTempUpload(file.id);
+                          const session_id = localStorage.getItem('session_id');
+                          const data = await getTempUploads(session_id || '');
+                          const files = Array.isArray(data) ? data : data.files || [];
+                          setUploadedFiles(files);
+                          setForceUpdate(prev => prev + 1); // Force re-render
+                        } catch (err: any) {
+                          setUploadError(err.message || 'Gagal menghapus file');
+                        } finally {
+                          setDeleting(false);
+                        }
+                      }}
+                    >
+                      {deleting ? 'Menghapus...' : 'Hapus'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
               </div>
             ) : (
               <div className="space-y-2">
