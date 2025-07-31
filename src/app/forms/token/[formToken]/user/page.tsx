@@ -44,11 +44,20 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
             const params = new URLSearchParams({
               title: formData.form.title,
               deadline: formData.form.deadline || '',
-              message: formData.form.deadline_message || ''
+              message: formData.form.deadline_message || 'Form telah melewati batas waktu yang ditentukan.'
             })
             router.push(`/forms/expired?${params.toString()}`)
             return
           }
+        } else {
+          // If form not found or access denied, redirect to expired page
+          const params = new URLSearchParams({
+            title: 'Form Tidak Ditemukan',
+            deadline: '',
+            message: 'Form tidak ditemukan atau tidak dapat diakses.'
+          })
+          router.push(`/forms/expired?${params.toString()}`)
+          return
         }
 
         // Fetch questions
@@ -75,16 +84,21 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
     }
   }, [formToken, router])
 
-  // Get NIK from localStorage
+  // Check authentication and get NIK from localStorage
   useEffect(() => {
     window.scrollTo(0, 0)
+    const isLoggedIn = localStorage.getItem('isLoggedIn')
     const storedNik = localStorage.getItem('nik')
-    if (storedNik) {
-      setNik(storedNik)
-    } else {
-      alert('NIK tidak ditemukan. Anda harus login ulang.')
+    
+    if (!isLoggedIn || !storedNik) {
+      // Save current URL for redirect after login
+      sessionStorage.setItem('redirectAfterLogin', `/forms/token/${formToken}/user`)
+      router.push('/')
+      return
     }
-  }, [])
+    
+    setNik(storedNik)
+  }, [formToken, router])
 
   if (loading || !form) return <p className="p-6">Loading...</p>
 

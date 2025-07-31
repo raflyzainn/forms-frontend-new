@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import HomepageHeader from '@/components/common/HomepageHeader'
-import { Form } from '@/types'
+import { Form, FormWithCustomURLs } from '@/types'
 
 interface FormTokenAdminPageProps {
   params: Promise<{
@@ -13,7 +13,7 @@ interface FormTokenAdminPageProps {
 
 export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) {
   const { formToken } = use(params)
-  const [form, setForm] = useState<Form | null>(null)
+  const [form, setForm] = useState<FormWithCustomURLs | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -22,17 +22,58 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
     const fetchFormData = async () => {
       try {
         setLoading(true)
+        
+        // Check authentication first
+        const isLoggedIn = localStorage.getItem('isLoggedIn')
+        if (!isLoggedIn) {
+          // Save current URL for redirect after login
+          sessionStorage.setItem('redirectAfterLogin', `/forms/token/${formToken}/admin`)
+          router.push('/')
+          return
+        }
+        
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formToken}/admin`)
         
         if (!response.ok) {
-          throw new Error('Form tidak ditemukan atau tidak memiliki akses admin')
+          // If form not found or access denied, redirect to expired page
+          const params = new URLSearchParams({
+            title: 'Form Tidak Ditemukan',
+            deadline: '',
+            message: 'Form tidak ditemukan atau tidak memiliki akses admin.'
+          })
+          router.push(`/forms/expired?${params.toString()}`)
+          return
         }
 
         const data = await response.json()
         setForm(data.form)
+        
+        // Check if form is expired
+        if (data.form.deadline) {
+          const now = new Date()
+          const deadline = new Date(data.form.deadline)
+          const isExpired = now > deadline
+          
+          if (isExpired) {
+            const params = new URLSearchParams({
+              title: data.form.title,
+              deadline: data.form.deadline,
+              message: data.form.deadline_message || 'Form telah melewati batas waktu yang ditentukan.'
+            })
+            router.push(`/forms/expired?${params.toString()}`)
+            return
+          }
+        }
       } catch (err) {
         console.error('Error fetching form data:', err)
-        setError(err instanceof Error ? err.message : 'Terjadi kesalahan')
+        // If any error occurs, redirect to expired page
+        const params = new URLSearchParams({
+          title: 'Terjadi Kesalahan',
+          deadline: '',
+          message: 'Terjadi kesalahan saat memuat form.'
+        })
+        router.push(`/forms/expired?${params.toString()}`)
+        return
       } finally {
         setLoading(false)
       }
@@ -41,7 +82,7 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
     if (formToken) {
       fetchFormData()
     }
-  }, [formToken])
+  }, [formToken, router])
 
   if (loading) {
     return (

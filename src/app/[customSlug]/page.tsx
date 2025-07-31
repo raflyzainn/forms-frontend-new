@@ -24,7 +24,39 @@ export default function CustomSlugPage({ params }: CustomSlugPageProps) {
         setLoading(true)
         const response: CustomURLResponse = await resolveCustomURL(customSlug)
         
-        // Redirect to the appropriate form page based on redirect_type
+        // Check if form is expired first (regardless of login status)
+        if (response.form.deadline) {
+          const now = new Date()
+          const deadline = new Date(response.form.deadline)
+          const isExpired = now > deadline
+          
+          if (isExpired) {
+            // Form is expired, redirect to expired page
+            const params = new URLSearchParams({
+              title: response.form.title,
+              deadline: response.form.deadline,
+              message: response.form.deadline_message || 'Form telah melewati batas waktu yang ditentukan.'
+            })
+            router.push(`/forms/expired?${params.toString()}`)
+            return
+          }
+        }
+        
+        // Check if user is logged in
+        const isLoggedIn = localStorage.getItem('isLoggedIn')
+        
+        if (!isLoggedIn) {
+          // Save the intended destination for after login
+          const targetUrl = response.redirect_type === 'admin' 
+            ? `/forms/token/${response.form_token}/admin`
+            : `/forms/token/${response.form_token}/user`
+          
+          sessionStorage.setItem('redirectAfterLogin', targetUrl)
+          router.push('/')
+          return
+        }
+        
+        // User is logged in, proceed to form
         if (response.redirect_type === 'user') {
           router.push(`/forms/token/${response.form_token}/user`)
         } else if (response.redirect_type === 'admin') {

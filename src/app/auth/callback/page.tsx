@@ -83,7 +83,15 @@ export default function OAuthCallbackPage() {
           return;
         }
 
-        router.push('/forms')
+        // Check if there's a pending redirect after login
+        const redirectAfterLogin = sessionStorage.getItem('redirectAfterLogin')
+        
+        if (redirectAfterLogin) {
+          sessionStorage.removeItem('redirectAfterLogin')
+          router.push(redirectAfterLogin)
+        } else {
+          router.push('/forms')
+        }
       } catch (err: any) {
         setError(err.message || 'Something went wrong')
       } finally {

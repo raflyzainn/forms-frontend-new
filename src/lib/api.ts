@@ -1088,9 +1088,15 @@ export async function resolveCustomURL(customSlug: string) {
   return res.json()
 }
 
-export async function deleteCustomURL(customURLId: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/custom-urls/${customURLId}`, {
+export async function deleteCustomURL(formId: string, customURLId: string) {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  
+  const res = await fetch(`/api/forms/${formId}/custom-url/${customURLId}`, {
     method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
   })
 
   if (!res.ok) {
