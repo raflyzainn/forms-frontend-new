@@ -385,6 +385,23 @@ export async function getCategories(): Promise<Category[]> {
   return data
 }
 
+export async function getChoiceCategories(): Promise<Category[]> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/choice/categories`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!res.ok) {
+    const errData = await res.json()
+    throw new Error(errData.message || 'Gagal mengambil kategori pilihan')
+  }
+
+  const data = await res.json()
+  return data
+}
+
 {/* Bagian Question */}
 
 export async function createQuestion(data: {
@@ -1154,5 +1171,78 @@ export async function deleteCustomURL(formId: string, customURLId: string) {
     throw new Error(error.message || 'Gagal menghapus custom URL')
   }
 
+  return res.json()
+}
+
+export async function getFormStatistics(formId: string) {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  const res = await fetch(`/api/forms/${formId}/statistics`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal memuat statistik form')
+  }
+  return res.json()
+}
+
+export async function getQuestionStatistics(formId: string, questionId: string) {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  const res = await fetch(`/api/forms/${formId}/statistics/${questionId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal memuat statistik pertanyaan')
+  }
+  return res.json()
+}
+
+// Choice API functions
+export async function createChoice(data: {
+  category_id: string
+  title: string
+  description?: string
+  comment?: string
+}) {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  
+  // Debug: Log payload yang akan dikirim
+  console.log('createChoice payload:', data);
+  
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/choice/add`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal menambahkan pilihan')
+  }
+  return res.json() 
+}
+
+export async function deleteChoice(choiceId: string) {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/choice/${choiceId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal menghapus pilihan')
+  }
   return res.json()
 }

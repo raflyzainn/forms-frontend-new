@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { STATIC_QUESTION_TYPES } from '@/lib/staticTypes'
-import { updateQuestion, getAllSections } from '@/lib/api'
+import { updateQuestion, getAllSections, createChoice, deleteChoice, getCategories } from '@/lib/api'
 import { Category, Section, Question } from '@/types'
 
 interface Props {
@@ -44,6 +44,10 @@ export default function EditQuestionForm({
   const [newChoiceTitle, setNewChoiceTitle] = useState('')
   const [addingChoice, setAddingChoice] = useState(false)
   const [allSections, setAllSections] = useState<Section[]>([])
+  const [choiceCategories, setChoiceCategories] = useState<Category[]>([])
+  
+  // State untuk choice category
+  const [choiceCategoryId, setChoiceCategoryId] = useState('')
 
   // Cek apakah tipe pertanyaan yang dipilih adalah tipe choice
   const selectedType = STATIC_QUESTION_TYPES.find((type) => type.id === editedQuestion.typeId);
@@ -67,21 +71,26 @@ export default function EditQuestionForm({
     }
   }, [question.choices]);
 
-  // Fetch all available sections
+  // Fetch all available sections and choice categories
   useEffect(() => {
-    async function fetchAllSections() {
+    async function fetchData() {
       try {
         console.log('EditQuestionForm: Fetching all sections...')
         const sections = await getAllSections()
         console.log('EditQuestionForm: Successfully fetched all sections:', sections.length, 'sections')
         setAllSections(sections)
         console.log('EditQuestionForm: Fetched all sections for dropdown:', sections.map(s => ({ id: s.id, title: s.title, section: s.section })))
+        
+        console.log('EditQuestionForm: Fetching choice categories...')
+        const choiceCats = await getCategories()
+        console.log('EditQuestionForm: Successfully fetched choice categories:', choiceCats.length, 'categories')
+        setChoiceCategories(choiceCats)
       } catch (err) {
-        console.error('EditQuestionForm: Failed to fetch all sections:', err)
-        toast.error('Gagal memuat semua sections')
+        console.error('EditQuestionForm: Failed to fetch data:', err)
+        toast.error('Gagal memuat data')
       }
     }
-    fetchAllSections()
+    fetchData()
   }, [])
 
   // Fungsi untuk menambah choice baru
@@ -91,27 +100,40 @@ export default function EditQuestionForm({
       return;
     }
     
+    if (!choiceCategoryId) {
+      toast.error('Harap pilih kategori pilihan terlebih dahulu sebelum menambah pilihan');
+      return;
+    }
+    
     setAddingChoice(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/choices`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title: newChoiceTitle }),
+      // Menggunakan API baru dengan category_id
+      const newChoice = await createChoice({
+        category_id: choiceCategoryId,
+        title: newChoiceTitle,
+        description: '',
+        comment: ''
       });
       
-      if (!response.ok) throw new Error('Gagal menambahkan pilihan');
-      
-      const newChoice = await response.json();
-      setAllChoices(prev => [...prev, newChoice]);
-      setSelectedChoiceIds(prev => [...prev, newChoice.id]);
+      setAllChoices(prev => [...prev, newChoice.data]);
+      setSelectedChoiceIds(prev => [...prev, newChoice.data.id]);
       setNewChoiceTitle('');
       toast.success('Pilihan berhasil ditambahkan');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal menambahkan pilihan');
     } finally {
       setAddingChoice(false);
+    }
+  };
+
+  const handleDeleteChoice = async (choiceId: string) => {
+    try {
+      await deleteChoice(choiceId);
+      setAllChoices(prev => prev.filter(choice => choice.id !== choiceId));
+      setSelectedChoiceIds(prev => prev.filter(id => id !== choiceId));
+      toast.success('Pilihan berhasil dihapus');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menghapus pilihan');
     }
   };
   
@@ -331,18 +353,30 @@ export default function EditQuestionForm({
                 <p className="text-sm text-gray-500 italic">Belum ada pilihan tersedia</p>
               ) : (
                 allChoices.map((choice) => (
-                  <div key={choice.id} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`choice-${choice.id}`}
-                      name="choice-options"
-                      checked={selectedChoiceIds.includes(choice.id)}
-                      onChange={() => handleChoiceChange(choice.id)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor={`choice-${choice.id}`} className="ml-2 text-sm text-gray-700">
-                      {choice.title}
-                    </label>
+                  <div key={choice.id} className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`choice-${choice.id}`}
+                        name="choice-options"
+                        checked={selectedChoiceIds.includes(choice.id)}
+                        onChange={() => handleChoiceChange(choice.id)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor={`choice-${choice.id}`} className="ml-2 text-sm text-gray-700">
+                        {choice.title}
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteChoice(choice.id)}
+                      className="ml-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                      title="Hapus pilihan"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 ))
               )}
@@ -350,6 +384,28 @@ export default function EditQuestionForm({
             
             {/* Form untuk menambah pilihan baru */}
             <div className="mt-3 border-t border-gray-200 pt-3">
+              {/* Dropdown untuk choice category */}
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Kategori Pilihan</label>
+                <select
+                  value={choiceCategoryId}
+                  onChange={(e) => setChoiceCategoryId(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:ring-0 text-sm"
+                >
+                  <option value="">Pilih Kategori Pilihan</option>
+                  {choiceCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {!choiceCategoryId && (
+                <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                  ⚠️ Pilih kategori pilihan terlebih dahulu sebelum menambah pilihan baru
+                </div>
+              )}
               <div className="flex items-center">
                 <input
                   type="text"
@@ -361,8 +417,9 @@ export default function EditQuestionForm({
                 <button
                   type="button"
                   onClick={handleAddChoice}
-                  disabled={addingChoice || !newChoiceTitle.trim()}
+                  disabled={addingChoice || !newChoiceTitle.trim() || !choiceCategoryId}
                   className="px-4 py-2 bg-blue-600 text-white rounded-r hover:bg-blue-700 disabled:bg-blue-400 text-sm font-medium transition-colors"
+                  title={!choiceCategoryId ? 'Pilih kategori pilihan terlebih dahulu' : ''}
                 >
                   {addingChoice ? 'Menambahkan...' : 'Tambah'}
                 </button>

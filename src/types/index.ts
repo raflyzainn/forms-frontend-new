@@ -199,5 +199,51 @@ export interface FormAccessResponse {
     message: string
   }
 }
+
+export interface ChartDataset {
+  label: string
+  data: number[]
+  backgroundColor: string[]
+  borderColor: string[]
+  borderWidth: number
+}
+
+export interface ChartData {
+  labels: string[]
+  datasets: ChartDataset[]
+}
+
+export interface TextAnalysis {
+  total_text_responses: number
+  unique_responses: number
+  top_responses: Record<string, number>
+  sample_responses: string[]
+}
+
+export interface QuestionStatistics {
+  question_id: string
+  question_title: string
+  question_type: string
+  total_responses: number
+  chart_data: ChartData
+  text_analysis?: TextAnalysis
+}
+
+export interface FormStatistics {
+  form_id: string
+  form_title: string
+  total_responses: number
+  questions: QuestionStatistics[]
+}
+
+export interface StatisticsResponse {
+  success: boolean
+  data: FormStatistics
+}
+
+export interface SingleQuestionStatisticsResponse {
+  success: boolean
+  data: QuestionStatistics
+}
   
   

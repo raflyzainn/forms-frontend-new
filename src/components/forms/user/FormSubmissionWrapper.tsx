@@ -151,9 +151,16 @@ export default function FormSubmissionWrapper({
     questionType: string,
     answer: any
   ) => {
+    let updatedAnswer = { ...answer }
+  
+    // Jika user mengunggah file baru, override dokumen lama
+    if (answer?.fileId) {
+      updatedAnswer.documents = [answer.fileId]
+    }
+  
     setAnswers((prev) => ({
       ...prev,
-      [questionId]: { type: questionType, answer },
+      [questionId]: { type: questionType, answer: updatedAnswer },
     }))
   }
 
@@ -177,20 +184,21 @@ export default function FormSubmissionWrapper({
           const response: any = {
             questionId,
             type,
-            ...answer
           }
-          
-          // Handle documents properly for edit mode
-          if (answer?.documents && Array.isArray(answer.documents)) {
-            // Keep documents as they are - existing as objects, new uploads as strings
-            response.documents = answer.documents
-          } else if (answer?.fileId) {
-            // If there's a fileId from temp upload, include it
+        
+          if (answer?.fileId) {
             response.documents = [answer.fileId]
+          } else if (answer?.documents && Array.isArray(answer.documents)) {
+            response.documents = answer.documents
           }
-          
+        
+          if ('value' in answer) response.value = answer.value
+          if ('choiceIds' in answer) response.choiceIds = answer.choiceIds
+          if ('choiceId' in answer) response.choiceId = answer.choiceId
+        
           return response
         })
+        
         
         await onSubmit(responses)
         setSubmitting(false)
@@ -202,8 +210,6 @@ export default function FormSubmissionWrapper({
         questionType: number
         answer: any
       }[] = []
-
-
 
       for (const [questionId, { type, answer }] of Object.entries(answers)) {
         const typeObj = STATIC_QUESTION_TYPES.find(t => t.type === type)

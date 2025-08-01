@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { useRouter } from 'next/navigation'
-import { FiPlus, FiFileText, FiCheckCircle } from 'react-icons/fi'
+import { FiPlus, FiFileText, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi'
 
 import { Form, FormWithCustomURLs } from '@/types'
 import { deleteForm, updateForm, getFormWithCustomURLs } from '@/lib/api'  
@@ -30,7 +30,12 @@ export default function HomePage() {
   
   const inactiveForms = forms.filter(form => {
     const status = getFormStatus(form)
-    return !status.isActive || status.isExpired
+    return !status.isActive && !status.isExpired
+  })
+  
+  const expiredForms = forms.filter(form => {
+    const status = getFormStatus(form)
+    return status.isExpired
   })
 
   useEffect(() => {
@@ -130,7 +135,7 @@ export default function HomePage() {
             <HomepageHeader showResponsesButton={false} showCreateFormButton={true} />
 
             {/* Form Status Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 mt-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 mt-8">
               <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                 <div className="flex items-center">
                   <div className="p-2 bg-blue-100 rounded-lg mr-3">
@@ -157,12 +162,24 @@ export default function HomePage() {
 
               <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                 <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg mr-3">
-                    <FiFileText className="w-5 h-5 text-red-600" />
+                  <div className="p-2 bg-orange-100 rounded-lg mr-3">
+                    <FiXCircle className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Nonaktif/Berakhir</p>
+                    <p className="text-sm font-medium text-gray-600">Nonaktif</p>
                     <p className="text-xl font-bold text-gray-900">{inactiveForms.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                <div className="flex items-center">
+                  <div className="p-2 bg-red-100 rounded-lg mr-3">
+                    <FiClock className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Berakhir</p>
+                    <p className="text-xl font-bold text-gray-900">{expiredForms.length}</p>
                   </div>
                 </div>
               </div>
@@ -228,12 +245,12 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Daftar Form Nonaktif/Berakhir Section */}
-            {inactiveForms.length > 0 && (
+            {/* Daftar Form Berakhir Section */}
+            {expiredForms.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Form Nonaktif/Berakhir</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Form Berakhir</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {inactiveForms.map((form) => (
+                  {expiredForms.map((form) => (
                     <FormCardUser
                       key={form.id}
                       form={form}
