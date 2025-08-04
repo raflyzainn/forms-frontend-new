@@ -18,7 +18,8 @@ interface SidebarProps {
 export default function Sidebar({ showSidebar, setShowSidebar, onCreateForm, showCreateFormButton = true, isAdminPage = false }: SidebarProps) {
   const sidebarRef = useRef(null)
   const router = useRouter()
-  const { id: formId } = useParams() as { id?: string }
+  const params = useParams() as { id?: string; formToken?: string }
+  const formId = params.id // Only use id, not formToken for sidebar button
   const [visible, setVisible] = useState(false)
   const [animateIn, setAnimateIn] = useState(false)
   const [userData, setUserData] = useState<any>(null)
@@ -71,7 +72,7 @@ export default function Sidebar({ showSidebar, setShowSidebar, onCreateForm, sho
           toast.error('Logout gagal: ' + ((result as any).message || 'Gagal logout'));
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       toast.error('Logout gagal: ' + (e?.message || e));
     }
     localStorage.removeItem('token');

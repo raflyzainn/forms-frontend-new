@@ -6,7 +6,7 @@ import { use } from 'react'
 import HomepageHeader from '@/components/common/HomepageHeader'
 import { useFetchFormData } from '@/components/fetch/useFetchFormData'
 import FormSubmissionWrapper from '@/components/forms/user/FormSubmissionWrapper'
-import { resolveCustomURL } from '@/lib/api'
+import { getFormByToken } from '@/lib/api'
 import { getFormStatus } from '@/lib/formUtils'
 import { checkUserSubmission } from '@/lib/api'
 import { FiCheckCircle, FiEdit, FiClock } from 'react-icons/fi'
@@ -24,25 +24,26 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
   const [userSubmission, setUserSubmission] = useState<any>(null)
   const [checkingSubmission, setCheckingSubmission] = useState(true)
 
-  const { title, description, comment, questions } = useFetchFormData(form?.id || '')
+  const { title, description, comment, questions, loading: questionsLoading } = useFetchFormData(form?.id || '')
 
   useEffect(() => {
     const fetchFormData = async () => {
       try {
         setLoading(true)
-        const response = await resolveCustomURL(formToken)
+        const response = await getFormByToken(formToken)
         
-        if (response.success) {
-          setForm(response.data.form)
+        // Response structure: { form: {...}, is_open: true, status: "active", ... }
+        if (response.form) {
+          setForm(response.form)
           setNik(localStorage.getItem('nik'))
 
           // Check if form is expired or inactive
-          const formStatus = getFormStatus(response.data.form)
+          const formStatus = getFormStatus(response.form)
           if (!formStatus.isActive || formStatus.isExpired) {
             const params = new URLSearchParams({
-              title: response.data.form.title,
-              deadline: response.data.form.deadline || '',
-              message: response.data.form.deadline_message || ''
+              title: response.form.title,
+              deadline: response.form.deadline || '',
+              message: response.form.deadline_message || ''
             })
             router.push(`/forms/expired?${params.toString()}`)
             return
@@ -51,7 +52,7 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
           // Check if user has already submitted
           const storedNik = localStorage.getItem('nik')
           if (storedNik) {
-            const submission = await checkUserSubmission(response.data.form.id, storedNik)
+            const submission = await checkUserSubmission(response.form.id, storedNik)
             setUserSubmission(submission)
           }
         } else {
@@ -69,7 +70,7 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
     fetchFormData()
   }, [formToken, router])
 
-  if (loading || checkingSubmission) {
+  if (loading || checkingSubmission || (form && questionsLoading)) {
     return (
       <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">

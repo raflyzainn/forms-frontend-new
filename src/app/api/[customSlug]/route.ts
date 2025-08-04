@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { customSlug: string } }
+  { params }: { params: Promise<{ customSlug: string }> }
 ) {
   try {
-    const { customSlug } = params
+    const { customSlug } = await params
     
     // Forward the request to the backend API
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'

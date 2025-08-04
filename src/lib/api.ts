@@ -1270,6 +1270,16 @@ export async function deleteChoice(choiceId: string) {
   return res.json()
 }
 
+// Fetch form data by token (for /forms/token/[formToken]/user)
+export async function getFormByToken(formToken: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formToken}/user`)
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Form tidak ditemukan')
+  }
+  return res.json()
+}
+
 export async function checkUserSubmission(formId: string, nik: string) {
   try {
     const allSubmissions = await getFormSubmissions(formId)

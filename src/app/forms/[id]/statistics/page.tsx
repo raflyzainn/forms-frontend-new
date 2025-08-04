@@ -19,7 +19,6 @@ export default function FormStatisticsPage() {
   const [exporting, setExporting] = useState(false)
 
   const [chartType, setChartType] = useState<'bar' | 'pie' | 'doughnut'>('bar')
-  const [filterType, setFilterType] = useState<string>('all')
   
   const chartsContainerRef = useRef<HTMLDivElement>(null)
 
@@ -153,10 +152,7 @@ export default function FormStatisticsPage() {
   }
 
 
-  const filteredQuestions = statistics?.data.questions.filter(q => {
-    if (filterType === 'all') return true
-    return q.question_title === filterType
-  }) || []
+  const filteredQuestions = statistics?.data.questions || []
 
   const getChartTypeForQuestion = (questionTitle: string) => {
     switch (questionTitle) {
@@ -224,23 +220,6 @@ export default function FormStatisticsPage() {
           <div className="flex flex-wrap items-center gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Filter Tipe Pertanyaan
-              </label>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">Semua Tipe</option>
-                <option value="single_choice">Single Choice</option>
-                <option value="single_choice_with_text">Single Choice with Text</option>
-                <option value="multiple_choice">Multiple Choice</option>
-                <option value="multiple_choice_with_text">Multiple Choice with Text</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Tipe Chart Default
               </label>
               <select
@@ -253,13 +232,6 @@ export default function FormStatisticsPage() {
                 <option value="doughnut">Doughnut Chart</option>
               </select>
             </div>
-
-            <button
-              onClick={fetchStatistics}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Refresh Data
-            </button>
           </div>
         </div>
 
