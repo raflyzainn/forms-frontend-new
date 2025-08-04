@@ -99,17 +99,12 @@ export default function EditQuestionForm({
       toast.error('Judul pilihan tidak boleh kosong');
       return;
     }
-    
-    if (!choiceCategoryId) {
-      toast.error('Harap pilih kategori pilihan terlebih dahulu sebelum menambah pilihan');
-      return;
-    }
-    
+    // Hardcoded category_id sesuai instruksi user
+    const hardcodedCategoryId = '858E2FBC-638D-11F0-81B4-CC1531536FD7';
     setAddingChoice(true);
     try {
-      // Menggunakan API baru dengan category_id
       const newChoice = await createChoice({
-        category_id: choiceCategoryId,
+        category_id: hardcodedCategoryId,
         title: newChoiceTitle,
         description: '',
         comment: ''
@@ -384,28 +379,6 @@ export default function EditQuestionForm({
             
             {/* Form untuk menambah pilihan baru */}
             <div className="mt-3 border-t border-gray-200 pt-3">
-              {/* Dropdown untuk choice category */}
-              <div className="mb-3">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Kategori Pilihan</label>
-                <select
-                  value={choiceCategoryId}
-                  onChange={(e) => setChoiceCategoryId(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-500 focus:ring-0 text-sm"
-                >
-                  <option value="">Pilih Kategori Pilihan</option>
-                  {choiceCategories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              {!choiceCategoryId && (
-                <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                  ⚠️ Pilih kategori pilihan terlebih dahulu sebelum menambah pilihan baru
-                </div>
-              )}
               <div className="flex items-center">
                 <input
                   type="text"

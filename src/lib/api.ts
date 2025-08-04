@@ -818,6 +818,8 @@ export async function uploadDocument({
   return await res.json()
 }
 
+
+
 export async function submitAnswers({
   nik,
   formId,
@@ -1024,6 +1026,27 @@ export async function updateSubmission(submissionId: string, answers: any[]) {
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.message || 'Gagal mengupdate submission');
+  }
+
+  return res.json();
+}
+
+// Update individual answer - backend will automatically handle temp uploads
+export async function updateAnswer(answerId: string, answerData: {
+  value?: string | null;
+  choices?: string[];
+}) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/answer/${answerId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(answerData),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal mengupdate answer');
   }
 
   return res.json();

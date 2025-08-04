@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getSubmissionById, updateSubmission, getTempUploads, deleteTempUpload } from '@/lib/api'
+import { getSubmissionById, updateSubmission, updateAnswer, getTempUploads, deleteTempUpload } from '@/lib/api'
 import { useFetchFormData } from '@/components/fetch/useFetchFormData'
 import FormSubmissionWrapper from '@/components/forms/user/FormSubmissionWrapper'
 import HomepageHeader from '@/components/common/HomepageHeader'
@@ -90,19 +90,30 @@ export default function EditSubmissionPage() {
 
   const handleUpdateSubmission = async (responses: any[]) => {
     try {
+      console.log('=== DEBUG: Starting handleUpdateSubmission ===');
+      console.log('Responses received:', responses);
+      console.log('Submission data:', submissionData);
+      
       // Transform responses to match API format
       const answers = responses.map(response => {
+        console.log('Processing response:', response);
+        
         const existingAnswer = submissionData?.answers.find(
           a => a.question_id === response.questionId
         )
         
+        console.log('Found existing answer:', existingAnswer);
+        
         if (!existingAnswer) {
+          console.error(`Answer tidak ditemukan untuk question ${response.questionId}`);
+          console.log('Available question IDs:', submissionData?.answers.map(a => a.question_id));
           throw new Error(`Answer tidak ditemukan untuk question ${response.questionId}`)
         }
 
         // Handle documents properly - extract document paths
         let documents: string[] = []
         if (response.documents && Array.isArray(response.documents)) {
+          console.log('Processing documents:', response.documents);
           documents = response.documents.map((doc: any) => {
             // If it's an existing document object, use the document_id
             if (doc && typeof doc === 'object' && doc.document_id) {
@@ -122,50 +133,97 @@ export default function EditSubmissionPage() {
           // If there's a fileId from temp upload
           documents = [response.fileId]
         }
+        
+        // Only preserve existing documents if explicitly no new documents in response
+        // This allows empty documents array to clear existing documents
+        console.log('Final documents for answer:', documents);
+
+        // Handle choices properly - match the format used in regular form submission
+        let choices: string[] = []
+        let value = response.value || existingAnswer.value || null
+        
+        if (response.choiceIds && Array.isArray(response.choiceIds)) {
+          choices = response.choiceIds
+        } else if (response.choiceId) {
+          choices = [response.choiceId]
+        } else if (existingAnswer.choices && existingAnswer.choices.length > 0) {
+          // Preserve existing choices if no new choices provided
+          choices = existingAnswer.choices.map((choice: any) => choice.choice_id || choice)
+          console.log('Preserving existing choices:', choices);
+        }
+        
+        // For Multiple Choice with Text, we need to handle the text value separately
+        // The backend expects choices array and value separately
+        console.log('Final processed answer:', {
+          answer_id: existingAnswer.answer_id,
+          value: value,
+          choices,
+          documents
+        });
 
         return {
           answer_id: existingAnswer.answer_id,
-          value: response.value || null,
-          choices: response.choiceIds || [],
-          documents: documents
+          value: value,
+          choices,
+          documents
         }
       })
 
-      // Convert temp uploads to permanent documents before updating
-      const processedAnswers = await Promise.all(answers.map(async (answer) => {
-        if (answer.documents && Array.isArray(answer.documents)) {
-          const processedDocuments = await Promise.all(answer.documents.map(async (docId: string) => {
-            // Check if this is a temp upload (string ID)
-            if (typeof docId === 'string' && docId.length > 0) {
-              try {
-                // Try to convert temp upload to permanent document
-                const convertRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/temp-uploads/${docId}/convert`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                });
-                
-                if (convertRes.ok) {
-                  const result = await convertRes.json();
-                  return result.document_id || docId; // Return permanent document ID
-                }
-              } catch (error) {
-                console.error('Failed to convert temp upload:', error);
-              }
-            }
-            return docId; // Return as is if not a temp upload or conversion failed
-          }));
+      // Use the correct backend flow: call updateAnswer for each answer
+      // Backend will automatically handle temp uploads
+      console.log('Using correct backend flow with updateAnswer API');
+      
+      const updatePromises = answers.map(async (answer, index) => {
+        try {
+          console.log(`Updating answer ${answer.answer_id}:`, {
+            value: answer.value,
+            choices: answer.choices,
+            documents: answer.documents
+          });
           
-          return {
-            ...answer,
-            documents: processedDocuments
-          };
+          // Get the original response to find question type
+          const originalResponse = responses[index];
+          const question = questions.find(q => q.questionId === originalResponse.questionId);
+          const questionType = question?.type?.name;
+          
+          let formattedAnswer: any = {};
+          
+          if (questionType === 'Multiple Choice') {
+            // For Multiple Choice, use choices array like in Postman
+            formattedAnswer = { choices: answer.choices || [] };
+          } else if (questionType === 'Multiple Choice with Text') {
+            // For Multiple Choice with Text, use choices array + value
+            formattedAnswer = { 
+              choices: answer.choices || [],
+              value: answer.value || null
+            };
+          } else if (questionType === 'Document Upload') {
+            // For Document Upload, only send value (fileId)
+            formattedAnswer = { value: answer.value || null };
+          } else {
+            // For other types, use the standard format
+            formattedAnswer = {
+              value: answer.value,
+              choices: answer.choices
+            };
+          }
+          
+          // Call updateAnswer API - backend will handle temp uploads automatically
+          const result = await updateAnswer(answer.answer_id, formattedAnswer);
+          
+          console.log(`Successfully updated answer ${answer.answer_id}:`, result);
+          return result;
+        } catch (error) {
+          console.error(`Failed to update answer ${answer.answer_id}:`, error);
+          throw error;
         }
-        return answer;
-      }));
-
-      await updateSubmission(submissionId, processedAnswers)
+      });
+      
+      await Promise.all(updatePromises);
+      console.log('All answers updated successfully using updateAnswer API');
+      
+      // Note: We don't need to call updateSubmission anymore since we're using updateAnswer API
+      // Backend will automatically handle temp uploads and update the submission
       
       // Cleanup temp uploads after successful update
       try {
@@ -236,19 +294,51 @@ export default function EditSubmissionPage() {
 
   // Transform submission data to match form format
   const preFilledAnswers = submissionData.answers.map(answer => {
-    const question = questions.find(q => q.questionId === answer.question_id)
+    console.log('Processing answer for prefill:', answer);
     
-    if (!question) return null
+    // Try to find question by ID first
+    let question = questions.find(q => q.questionId === answer.question_id)
+    
+    // If not found by exact ID, try to find by title or other attributes
+    if (!question) {
+      console.warn(`Question not found for answer.question_id: ${answer.question_id}`);
+      console.log('Available question IDs:', questions.map(q => q.questionId));
+      
+      // Try to find by question title if available
+      if (answer.question_title) {
+        question = questions.find(q => q.title === answer.question_title);
+        if (question) {
+          console.log(`Found question by title match: ${question.title}`);
+        }
+      }
+    }
+    
+    // If still no question found, create a minimal mapping to preserve data
+    if (!question) {
+      console.warn(`Creating fallback mapping for question_id: ${answer.question_id}`);
+      // Don't return null - preserve the answer data even if question mapping fails
+      return {
+        questionId: answer.question_id,
+        value: answer.value || null,
+        choiceIds: answer.choices?.map(c => c.choice_id) || [],
+        documents: answer.documents?.map(d => ({
+          document_id: d.document_id,
+          file_name: d.file_name,
+          path: d.document_path
+        })) || []
+      }
+    }
 
+    console.log('Successfully mapped answer with question:', question.title);
     return {
       questionId: answer.question_id,
       value: answer.value,
-      choiceIds: answer.choices.map(c => c.choice_id),
-      documents: answer.documents.map(d => ({
+      choiceIds: answer.choices?.map(c => c.choice_id) || [],
+      documents: answer.documents?.map(d => ({
         document_id: d.document_id,
         file_name: d.file_name,
         path: d.document_path
-      }))
+      })) || []
     }
   }).filter((item): item is NonNullable<typeof item> => item !== null)
 

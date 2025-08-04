@@ -22,7 +22,7 @@
     "next": "15.3.5",
     "nprogress": "^0.2.0",
     "postcss": "^8.5.6",
-    "react": "^19.0.0",
+    "react": "^19.1.1",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",

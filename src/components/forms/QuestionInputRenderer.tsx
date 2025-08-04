@@ -255,25 +255,53 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
         const session_id = localStorage.getItem('session_id');
         if (!session_id) return;
         
-        // If we have existing documents in answer (edit mode), use them
-        if (answer?.documents && Array.isArray(answer.documents) && answer.documents.length > 0) {
-          // Transform existing documents to match uploaded files format
-          const existingDocs = answer.documents.map((doc: any) => ({
-            id: doc.document_id || doc.id,
-            filename: doc.file_name || doc.filename || doc.name,
-            name: doc.file_name || doc.filename || doc.name,
-            path: doc.path || doc.document_path,
-            form_id: formId,
-            question_id: question.questionId,
-            isExisting: true // Flag to identify existing documents
-          }));
-          setUploadedFiles(existingDocs);
-        } else {
-          // Load temp uploads for new submissions
-          getTempUploads(session_id)
-            .then((data) => setUploadedFiles(Array.isArray(data) ? data : data.files || []))
-            .catch((err) => setUploadError(err.message || 'Gagal mengambil file'));
-        }
+        // Always check for temp uploads first (prioritize new uploads)
+        getTempUploads(session_id)
+          .then((data) => {
+            const tempFiles = Array.isArray(data) ? data : data.files || [];
+            const relevantTempFiles = tempFiles.filter(
+              (file: any) => file.form_id === formId && file.question_id === question.questionId
+            );
+            
+            if (relevantTempFiles.length > 0) {
+              // If there are temp uploads for this question, use them (new uploads)
+              console.log('Using temp uploads:', relevantTempFiles);
+              setUploadedFiles(tempFiles);
+            } else if (answer?.documents && Array.isArray(answer.documents) && answer.documents.length > 0) {
+              // If no temp uploads but have existing documents, use existing documents
+              console.log('Using existing documents:', answer.documents);
+              const existingDocs = answer.documents.map((doc: any) => ({
+                id: doc.document_id || doc.id,
+                filename: doc.file_name || doc.filename || doc.name,
+                name: doc.file_name || doc.filename || doc.name,
+                path: doc.path || doc.document_path,
+                form_id: formId,
+                question_id: question.questionId,
+                isExisting: true // Flag to identify existing documents
+              }));
+              setUploadedFiles(existingDocs);
+            } else {
+              // No temp uploads and no existing documents
+              setUploadedFiles([]);
+            }
+          })
+          .catch((err) => {
+            console.error('Error loading temp uploads:', err);
+            // Fallback to existing documents if temp upload loading fails
+            if (answer?.documents && Array.isArray(answer.documents) && answer.documents.length > 0) {
+              const existingDocs = answer.documents.map((doc: any) => ({
+                id: doc.document_id || doc.id,
+                filename: doc.file_name || doc.filename || doc.name,
+                name: doc.file_name || doc.filename || doc.name,
+                path: doc.path || doc.document_path,
+                form_id: formId,
+                question_id: question.questionId,
+                isExisting: true
+              }));
+              setUploadedFiles(existingDocs);
+            }
+            setUploadError(err.message || 'Gagal mengambil file');
+          });
       }, [question.questionId, answer?.documents, formId]);
 
       const { getRootProps, getInputProps, isDragActive } = useDropzone({
