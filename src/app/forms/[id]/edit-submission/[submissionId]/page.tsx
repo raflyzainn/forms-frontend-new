@@ -144,12 +144,25 @@ export default function EditSubmissionPage() {
         
         if (response.choiceIds && Array.isArray(response.choiceIds)) {
           choices = response.choiceIds
+          console.log('Using new choiceIds from response:', choices);
         } else if (response.choiceId) {
           choices = [response.choiceId]
+          console.log('Using new choiceId from response:', choices);
         } else if (existingAnswer.choices && existingAnswer.choices.length > 0) {
           // Preserve existing choices if no new choices provided
           choices = existingAnswer.choices.map((choice: any) => choice.choice_id || choice)
           console.log('Preserving existing choices:', choices);
+        }
+        
+        // For "with text" questions, preserve existing text value if not explicitly changed
+        const question = questions.find(q => q.questionId === response.questionId);
+        const questionType = question?.type?.name;
+        
+        if ((questionType === 'Single Item Choice with Text' || questionType === 'Multiple Choice with Text') && 
+            response.value === undefined && existingAnswer.value) {
+          // If user didn't change the text field, preserve the existing text value
+          value = existingAnswer.value;
+          console.log('Preserving existing text value for', questionType, ':', value);
         }
         
         // For Multiple Choice with Text, we need to handle the text value separately
@@ -195,6 +208,12 @@ export default function EditSubmissionPage() {
             // For Multiple Choice with Text, use choices array + value
             formattedAnswer = { 
               choices: answer.choices || [],
+              value: answer.value || null
+            };
+          } else if (questionType === 'Single Item Choice with Text') {
+            // For Single Item Choice with Text, use choiceId + value
+            formattedAnswer = { 
+              choiceId: answer.choices?.[0] || null,
               value: answer.value || null
             };
           } else if (questionType === 'Document Upload') {

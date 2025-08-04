@@ -1269,3 +1269,14 @@ export async function deleteChoice(choiceId: string) {
   }
   return res.json()
 }
+
+export async function checkUserSubmission(formId: string, nik: string) {
+  try {
+    const allSubmissions = await getFormSubmissions(formId)
+    const userSubmission = allSubmissions.find((sub: any) => sub.nik === nik)
+    return userSubmission || null
+  } catch (error) {
+    console.error('Error checking user submission:', error)
+    return null
+  }
+}

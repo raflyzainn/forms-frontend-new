@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { getFormStatistics } from '@/lib/api'
 import { StatisticsResponse } from '@/types'
 import StatisticsChart from '@/components/charts/StatisticsChart'
 import HomepageHeader from '@/components/common/HomepageHeader'
+import html2canvas from 'html2canvas'
 
 export default function FormStatisticsPage() {
   const params = useParams()
@@ -15,9 +16,12 @@ export default function FormStatisticsPage() {
   const [statistics, setStatistics] = useState<StatisticsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
 
   const [chartType, setChartType] = useState<'bar' | 'pie' | 'doughnut'>('bar')
   const [filterType, setFilterType] = useState<string>('all')
+  
+  const chartsContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchStatistics()
@@ -37,6 +41,116 @@ export default function FormStatisticsPage() {
     }
   }
 
+  const exportToImage = async () => {
+    if (!chartsContainerRef.current) return
+    
+    try {
+      setExporting(true)
+      
+      // Capture the charts container with simplified configuration
+      const canvas = await html2canvas(chartsContainerRef.current, {
+        backgroundColor: '#ffffff', // Use white background instead
+        scale: 1.5, // Lower scale for better compatibility
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        removeContainer: true, // Remove temporary container
+        foreignObjectRendering: false, // Disable foreign object rendering
+        imageTimeout: 0, // No timeout for images
+        onclone: (clonedDoc) => {
+          // Add a simple style to override problematic colors
+          const style = clonedDoc.createElement('style')
+          style.textContent = `
+            * { 
+              color: #000000 !important; 
+              background-color: #ffffff !important; 
+            }
+            .chart-container { 
+              background: #ffffff !important; 
+            }
+          `
+          clonedDoc.head.appendChild(style)
+        }
+      })
+      
+      // Convert to blob and download
+      canvas.toBlob((blob: Blob | null) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `statistics-${formId}-${new Date().toISOString().split('T')[0]}.png`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(url)
+          
+          toast.success('Statistics berhasil di-export!')
+        }
+      }, 'image/png')
+      
+    } catch (err) {
+      console.error('Export failed:', err)
+      toast.error('Gagal export statistics')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const exportSingleChart = async (chartElement: HTMLElement, questionTitle: string) => {
+    try {
+      setExporting(true)
+      
+      // Capture single chart with simplified configuration
+      const canvas = await html2canvas(chartElement, {
+        backgroundColor: '#ffffff',
+        scale: 1.5,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        removeContainer: true,
+        foreignObjectRendering: false,
+        imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          const style = clonedDoc.createElement('style')
+          style.textContent = `
+            * { 
+              color: #000000 !important; 
+              background-color: #ffffff !important; 
+            }
+            .chart-container { 
+              background: #ffffff !important; 
+            }
+          `
+          clonedDoc.head.appendChild(style)
+        }
+      })
+      
+      // Convert to blob and download
+      canvas.toBlob((blob: Blob | null) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          // Clean question title for filename
+          const cleanTitle = questionTitle.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')
+          link.download = `chart-${cleanTitle}-${formId}-${new Date().toISOString().split('T')[0]}.png`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(url)
+          
+          toast.success(`Chart "${questionTitle}" berhasil di-export!`)
+        }
+      }, 'image/png')
+      
+    } catch (err) {
+      console.error('Export failed:', err)
+      toast.error('Gagal export chart')
+    } finally {
+      setExporting(false)
+    }
+  }
 
 
   const filteredQuestions = statistics?.data.questions.filter(q => {
@@ -159,15 +273,46 @@ export default function FormStatisticsPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {filteredQuestions.map((question) => (
-              <div key={question.question_id}>
-                <StatisticsChart
-                  data={question.chart_data}
-                  questionTitle={question.question_title}
-                  questionType={question.question_type}
-                  totalResponses={question.total_responses}
-                  chartType={getChartTypeForQuestion(question.question_title)}
-                  textAnalysis={question.text_analysis}
-                />
+              <div key={question.question_id} className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {question.question_title}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      const chartElement = document.querySelector(`[data-chart-id="${question.question_id}"]`) as HTMLElement
+                      if (chartElement) {
+                        exportSingleChart(chartElement, question.question_title)
+                      }
+                    }}
+                    disabled={exporting}
+                    className="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    {exporting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                        Exporting...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div data-chart-id={question.question_id}>
+                  <StatisticsChart
+                    data={question.chart_data}
+                    questionTitle={question.question_title}
+                    questionType={question.question_type}
+                    totalResponses={question.total_responses}
+                    chartType={getChartTypeForQuestion(question.question_title)}
+                    textAnalysis={question.text_analysis}
+                  />
+                </div>
               </div>
             ))}
           </div>

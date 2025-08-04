@@ -131,7 +131,8 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
 
     case QuestionTypeName.MultipleChoiceWithText: {
       const selectedChoices = answer?.choiceIds || [];
-      const otherText = answer?.value || '';
+      // Handle null value properly - show empty string in input but send null to backend
+      const otherText = answer?.value !== null && answer?.value !== undefined ? answer.value : '';
 
       const handleCheckboxChange = (choiceId: string) => {
         const newChoices = selectedChoices.includes(choiceId)
@@ -141,7 +142,9 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
       };
 
       const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        onAnswerChange({ choiceIds: selectedChoices, value: e.target.value });
+        // Send null if text is empty, otherwise send the text value
+        const textValue = e.target.value.trim() === '' ? null : e.target.value;
+        onAnswerChange({ choiceIds: selectedChoices, value: textValue });
       };
 
       return (
@@ -173,6 +176,9 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
     }
 
     case QuestionTypeName.SingleItemWithText:
+      // Handle null value properly - show empty string in input but send null to backend
+      const textValue = answer?.value !== null && answer?.value !== undefined ? answer.value : '';
+      
       return (
         <div className="space-y-2">
           {question.choices?.map((choice, index) => (
@@ -193,8 +199,12 @@ export default function QuestionInputRenderer({ question, name, onAnswerChange, 
             type="text"
             className="w-full border border-gray-300 py-2 px-3 rounded focus:ring focus:ring-blue-300"
             placeholder="Lainnya (sebutkan)"
-            value={answer?.value || ''}
-            onChange={readOnly ? undefined : (e) => onAnswerChange({ ...answer, value: e.target.value, choiceId: null })}
+            value={textValue}
+            onChange={readOnly ? undefined : (e) => {
+              // Send null if text is empty, otherwise send the text value
+              const newTextValue = e.target.value.trim() === '' ? null : e.target.value;
+              onAnswerChange({ ...answer, value: newTextValue, choiceId: null });
+            }}
             readOnly={readOnly}
             disabled={readOnly}
           />

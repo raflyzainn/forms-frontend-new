@@ -70,7 +70,6 @@ export default function FormSubmissionWrapper({
       }
     }
     
-    // If in edit mode, pre-fill with existing answers
     if (isEditMode && preFilledAnswers.length > 0) {
       const preFilledData: Record<string, { type: string; answer: any }> = {}
       
@@ -110,7 +109,6 @@ export default function FormSubmissionWrapper({
   useEffect(() => {
     if (!nik || !formId) return
     if (Object.keys(debouncedAnswers).length === 0) return
-    // Don't auto-save draft in edit mode
     if (isEditMode) return
 
     const saveDraft = async () => {
@@ -118,7 +116,6 @@ export default function FormSubmissionWrapper({
       setJustSaved(false)
 
       try {
-        // Wait for any existing save operation to complete
         if (saveQueueRef.current) {
           await saveQueueRef.current
         }
@@ -192,8 +189,16 @@ export default function FormSubmissionWrapper({
             response.documents = answer.documents
           }
         
-          if ('value' in answer) response.value = answer.value
-          if ('choiceIds' in answer) response.choiceIds = answer.choiceIds
+          // Always include value for "with text" questions, even if it's null
+          if ('value' in answer) {
+            response.value = answer.value
+          }
+          
+          // Always include choiceIds for multiple choice questions
+          if ('choiceIds' in answer) {
+            response.choiceIds = answer.choiceIds
+          }
+          
           if ('choiceId' in answer) response.choiceId = answer.choiceId
         
           return response
@@ -244,7 +249,12 @@ export default function FormSubmissionWrapper({
               break
             case "4": // Single Item Choice with Text
               questionTypeNumber = 4
-              formattedAnswer = { choiceId: answer?.choiceId || '', value: answer?.value || '' }
+              // Always send choiceId, and send value if it exists and is not empty
+              const textValue = answer?.value && answer.value.toString().trim() !== '' ? answer.value : null;
+              formattedAnswer = { 
+                choiceId: answer?.choiceId || '', 
+                value: textValue 
+              }
               break
             case "5": // Multiple Choice
               questionTypeNumber = 5
@@ -261,7 +271,7 @@ export default function FormSubmissionWrapper({
                 })
               }
               
-              // Add text value as object (if exists)
+              // Add text value as object (only if exists and not empty)
               if (answer?.value && answer.value.toString().trim() !== '') {
                 multipleChoiceValues.push({
                   choiceId: null,
@@ -299,7 +309,7 @@ export default function FormSubmissionWrapper({
         if (session_id) {
           const tempFiles = await getTempUploads(session_id);
           const filesToDelete = (Array.isArray(tempFiles) ? tempFiles : tempFiles.files || []).filter(
-            (file) => file.form_id === formId
+            (file: any) => file.form_id === formId
           );
           for (const file of filesToDelete) {
             try {

@@ -100,8 +100,12 @@ export default function DraggableQuestion({
     }
 
     if (question.choices && onReorderChoices) {
-      const oldIndex = question.choices.findIndex(c => c.choiceId === active.id)
-      const newIndex = question.choices.findIndex(c => c.choiceId === over.id)
+      const oldIndex = question.choices.findIndex((c, index) => 
+        (c.choiceId || `${question.questionId}-choice-${index}`) === active.id
+      )
+      const newIndex = question.choices.findIndex((c, index) => 
+        (c.choiceId || `${question.questionId}-choice-${index}`) === over.id
+      )
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         const newChoices = arrayMove(question.choices, oldIndex, newIndex)
@@ -201,13 +205,13 @@ export default function DraggableQuestion({
                   onDragEnd={handleChoiceDragEnd}
                 >
                   <SortableContext
-                    items={question.choices.map(c => c.choiceId)}
+                    items={question.choices.map((c, index) => c.choiceId || `${question.questionId}-choice-${index}`)}
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-2">
                       {question.choices.map((choice, choiceIndex) => (
                         <DraggableChoice
-                          key={choice.choiceId}
+                          key={`${question.questionId}-${choice.choiceId || choiceIndex}`}
                           choice={{
                             id: choice.choiceId,
                             choice_id: choice.choiceId,

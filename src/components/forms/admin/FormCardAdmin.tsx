@@ -81,8 +81,6 @@ export default function FormCard({ form, onEdit, onDelete }: Props) {
             Lihat
           </Link>
 
-
-
           <button
             className="bg-gradient-to-r from-green-600 to-emerald-600 text-white text-sm font-medium py-2 px-3 rounded-md hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2"
             onClick={() => onEdit(form)}

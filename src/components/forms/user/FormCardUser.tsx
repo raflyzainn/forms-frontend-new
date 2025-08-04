@@ -108,7 +108,6 @@ export default function FormCard({ form, onEdit, onDelete }: Props) {
               </p>
             </div>
           )}
-
         </div>
 
         {/* Action Button - always at bottom */}
