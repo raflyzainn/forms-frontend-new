@@ -6,7 +6,7 @@ export async function DELETE(
 ) {
   try {
     const { id, customUrlId } = params;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     const response = await fetch(`${apiUrl}/forms/${id}/custom-url/${customUrlId}`, {
       method: 'DELETE',
       headers: {

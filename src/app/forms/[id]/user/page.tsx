@@ -30,7 +30,6 @@ export default function UserFormPage() {
       alert('NIK tidak ditemukan. Anda harus login ulang.')
     }
 
-    // Fetch form data to check deadline and user submission
     const fetchFormData = async () => {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token')
@@ -49,7 +48,6 @@ export default function UserFormPage() {
           const formData = await response.json()
           setForm(formData)
 
-          // Check if form is expired or inactive
           const formStatus = getFormStatus(formData)
           if (!formStatus.isActive || formStatus.isExpired) {
             const params = new URLSearchParams({
@@ -61,7 +59,6 @@ export default function UserFormPage() {
             return
           }
 
-          // Check if user has already submitted
           if (storedNik) {
             const submission = await checkUserSubmission(formId, storedNik)
             setUserSubmission(submission)
@@ -97,7 +94,6 @@ export default function UserFormPage() {
     )
   }
 
-  // If user has already submitted, show edit option
   if (userSubmission) {
     return (
       <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">

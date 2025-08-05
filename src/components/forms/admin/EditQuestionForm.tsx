@@ -27,7 +27,6 @@ export default function EditQuestionForm({
   isSubmitting,
   setIsSubmitting
 }: Props) {
-  // State untuk form pertanyaan
   const [editedQuestion, setEditedQuestion] = useState({
     title: question.title || '',
     description: question.description || '',
@@ -38,7 +37,6 @@ export default function EditQuestionForm({
     isMandatory: question.mandatory || false
   })
   
-  // State untuk pilihan (choices)
   const [allChoices, setAllChoices] = useState<{ id: string, title: string }[]>([])
   const [selectedChoiceIds, setSelectedChoiceIds] = useState<string[]>([])
   const [newChoiceTitle, setNewChoiceTitle] = useState('')
@@ -46,14 +44,11 @@ export default function EditQuestionForm({
   const [allSections, setAllSections] = useState<Section[]>([])
   const [choiceCategories, setChoiceCategories] = useState<Category[]>([])
   
-  // State untuk choice category
   const [choiceCategoryId, setChoiceCategoryId] = useState('')
 
-  // Cek apakah tipe pertanyaan yang dipilih adalah tipe choice
   const selectedType = STATIC_QUESTION_TYPES.find((type) => type.id === editedQuestion.typeId);
   const isChoiceType = ["3", "4", "5", "6"].includes(selectedType?.type || "");
   
-  // Ambil data choices ketika tipe pertanyaan adalah choice
   useEffect(() => {
     if (isChoiceType) {
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/choices`)
@@ -63,7 +58,6 @@ export default function EditQuestionForm({
     }
   }, [isChoiceType]);
 
-  // Set selected choices dari question yang ada
   useEffect(() => {
     if (question.choices && question.choices.length > 0) {
       const choiceIds = question.choices.map(choice => choice.choiceId);
@@ -71,7 +65,6 @@ export default function EditQuestionForm({
     }
   }, [question.choices]);
 
-  // Fetch all available sections and choice categories
   useEffect(() => {
     async function fetchData() {
       try {
@@ -93,13 +86,11 @@ export default function EditQuestionForm({
     fetchData()
   }, [])
 
-  // Fungsi untuk menambah choice baru
   const handleAddChoice = async () => {
     if (!newChoiceTitle.trim()) {
       toast.error('Judul pilihan tidak boleh kosong');
       return;
     }
-    // Hardcoded category_id sesuai instruksi user
     const hardcodedCategoryId = '858E2FBC-638D-11F0-81B4-CC1531536FD7';
     setAddingChoice(true);
     try {
@@ -132,9 +123,7 @@ export default function EditQuestionForm({
     }
   };
   
-  // Fungsi untuk menangani perubahan pilihan choice
   const handleChoiceChange = (choiceId: string) => {
-    // Semua tipe choice bisa memilih multiple choices untuk ditambahkan ke soal
     setSelectedChoiceIds(prev => 
       prev.includes(choiceId)
         ? prev.filter(id => id !== choiceId)
@@ -142,7 +131,6 @@ export default function EditQuestionForm({
     );
   };
 
-  // Handle submitting updated question
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -151,13 +139,11 @@ export default function EditQuestionForm({
       return
     }
     
-    // Validasi choices untuk tipe pertanyaan choice
     if (isChoiceType && selectedChoiceIds.length === 0) {
       toast.error('Pilihan wajib dipilih untuk tipe pertanyaan ini');
       return;
     }
 
-    // Validasi minimal 2 choices untuk single choice types
     if ((selectedType?.type === "3" || selectedType?.type === "4") && selectedChoiceIds.length < 2) {
       toast.error('Untuk tipe Single Choice, minimal harus ada 2 pilihan');
       return;
@@ -170,7 +156,6 @@ export default function EditQuestionForm({
       const selectedCategory = categories.find(cat => cat.id === editedQuestion.categoryId);
       const selectedSection = sections.find(sec => sec.id === editedQuestion.sectionId);
       
-      // Buat payload untuk API updateQuestion
       const payload = {
         form_id: formId,
         type_id: selectedType ? selectedType.id : editedQuestion.typeId,
@@ -182,10 +167,8 @@ export default function EditQuestionForm({
         is_mandatory: editedQuestion.isMandatory
       };
       
-      // Update pertanyaan
       const updatedQuestion = await updateQuestion(question.questionId, payload);
       
-      // Jika tipe pertanyaan adalah choice, update choices mapping
       if (isChoiceType && selectedChoiceIds.length > 0) {
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${question.questionId}/choices/map`, {
           method: 'POST',
@@ -194,7 +177,6 @@ export default function EditQuestionForm({
         });
       }
       
-      // Buat objek pertanyaan yang diupdate untuk ditambahkan ke state
       const updatedQ: Question = {
         questionId: question.questionId,
         form_id: formId,
@@ -327,7 +309,6 @@ export default function EditQuestionForm({
           </div>
         </div>
         
-        {/* Bagian pilihan (choices) untuk tipe pertanyaan choice */}
         {isChoiceType && (
           <div className="bg-gray-50 p-4 rounded-md border border-gray-200 mt-4">
             <h4 className="text-sm font-medium text-gray-700 mb-3">Pilihan</h4>
@@ -337,7 +318,6 @@ export default function EditQuestionForm({
                 : "Pilih pilihan yang akan ditampilkan untuk Multiple Choice"}
             </p>
             
-            {/* Daftar pilihan yang tersedia */}
             <div className="space-y-2 max-h-60 overflow-y-auto mb-4 p-2">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-xs text-gray-600">
@@ -377,7 +357,6 @@ export default function EditQuestionForm({
               )}
             </div>
             
-            {/* Form untuk menambah pilihan baru */}
             <div className="mt-3 border-t border-gray-200 pt-3">
               <div className="flex items-center">
                 <input

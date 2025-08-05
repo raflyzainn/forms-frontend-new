@@ -78,7 +78,7 @@ export default function FormQuestionGroupAdmin({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Minimum distance before drag starts
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -93,11 +93,9 @@ export default function FormQuestionGroupAdmin({
       return
     }
 
-    // Check if it's a section drag
     const isSectionDrag = sections.some(s => s.id === active.id)
     
     if (isSectionDrag && onReorderSections) {
-      // Sort sections by order_sequence for drag & drop
       const sortedSections = [...sections].sort((a, b) => {
         const aOrder = (a as any)?.order_sequence || 0
         const bOrder = (b as any)?.order_sequence || 0
@@ -112,7 +110,6 @@ export default function FormQuestionGroupAdmin({
         onReorderSections(newSections)
       }
     } else {
-      // Question drag
       const oldIndex = questions.findIndex(q => q.questionId === active.id)
       const newIndex = questions.findIndex(q => q.questionId === over.id)
       
@@ -129,11 +126,9 @@ export default function FormQuestionGroupAdmin({
     console.log('Grouping sections - Questions:', questions.length, 'Sections:', sections.length)
     console.log('Sections with order_sequence:', sections.map(s => ({ id: s.id, title: s.title, order_sequence: s.order_sequence })))
     
-    // Only create entries for sections that have questions
     questions.forEach((q) => {
       const sectionId = q.section?.id || 'unknown'
       if (!result[sectionId]) {
-        // Find the actual section data from sections prop
         const actualSection = sections.find(s => s.id === sectionId)
         console.log('Section mapping:', { 
           sectionId, 
@@ -156,7 +151,6 @@ export default function FormQuestionGroupAdmin({
     return result
   }, [questions, sections])
 
-  // Sort sections by order_sequence
   const sortedGroupedSections = useMemo(() => {
     const sectionsArray = Object.values(groupedSections)
     const sorted = sectionsArray.sort((a, b) => {
@@ -247,7 +241,6 @@ export default function FormQuestionGroupAdmin({
                       />
                     ))}
                     
-                    {/* Tombol tambah pertanyaan di akhir section */}
                     <li className="flex justify-center mt-6 mb-2">
                       <button
                         onClick={() => onAddQuestion(group.questions.length > 0 ? group.questions.length - 1 : null)}

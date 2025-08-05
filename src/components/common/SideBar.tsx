@@ -19,11 +19,9 @@ export default function Sidebar({ showSidebar, setShowSidebar, onCreateForm, sho
   const sidebarRef = useRef(null)
   const router = useRouter()
   const params = useParams() as { id?: string; formToken?: string }
-  const formId = params.id // Only use id, not formToken for sidebar button
+  const formId = params.id 
   const [visible, setVisible] = useState(false)
   const [animateIn, setAnimateIn] = useState(false)
-  const [userData, setUserData] = useState<any>(null)
-  const [loadingUser, setLoadingUser] = useState(true)
 
   useEffect(() => {
     if (showSidebar) {

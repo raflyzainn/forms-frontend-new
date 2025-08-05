@@ -24,14 +24,12 @@ export default function CustomSlugPage({ params }: CustomSlugPageProps) {
         setLoading(true)
         const response: CustomURLResponse = await resolveCustomURL(customSlug)
         
-        // Check if form is expired first (regardless of login status)
         if (response.form.deadline) {
           const now = new Date()
           const deadline = new Date(response.form.deadline)
           const isExpired = now > deadline
           
           if (isExpired) {
-            // Form is expired, redirect to expired page
             const params = new URLSearchParams({
               title: response.form.title,
               deadline: response.form.deadline,
@@ -42,11 +40,9 @@ export default function CustomSlugPage({ params }: CustomSlugPageProps) {
           }
         }
         
-        // Check if user is logged in
         const isLoggedIn = localStorage.getItem('isLoggedIn')
         
         if (!isLoggedIn) {
-          // Save the intended destination for after login
           const targetUrl = response.redirect_type === 'admin' 
             ? `/forms/token/${response.form_token}/admin`
             : `/forms/token/${response.form_token}/user`
@@ -56,13 +52,11 @@ export default function CustomSlugPage({ params }: CustomSlugPageProps) {
           return
         }
         
-        // User is logged in, proceed to form
         if (response.redirect_type === 'user') {
           router.push(`/forms/token/${response.form_token}/user`)
         } else if (response.redirect_type === 'admin') {
           router.push(`/forms/token/${response.form_token}/admin`)
         } else {
-          // Default to user page
           router.push(`/forms/token/${response.form_token}/user`)
         }
       } catch (err) {
@@ -95,7 +89,7 @@ export default function CustomSlugPage({ params }: CustomSlugPageProps) {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Form Tidak Ditemukan</h1>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/forms')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Kembali ke Beranda

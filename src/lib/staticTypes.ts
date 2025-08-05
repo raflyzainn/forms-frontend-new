@@ -140,17 +140,14 @@ export const SECTION_COLORS = [
   }
 ]
 
-// Helper function to get color for section index
 export function getSectionColor(index: number) {
   return SECTION_COLORS[index % SECTION_COLORS.length]
 }
 
-// Template questions untuk form koperasi
 export const TEMPLATE_QUESTIONS = [
-  // 1. Text Question - Nama Koperasi
   {
-    form_id: '', // Will be filled dynamically
-    type_id: '858c134a-638d-11f0-81b4-cc1531536fd7', // Text
+    form_id: '', 
+    type_id: '858c134a-638d-11f0-81b4-cc1531536fd7', 
     category_id: '857BC61C-638D-11F0-81B4-CC1531536FD7',
     section_id: '8589D000-638D-11F0-81B4-CC1531536FD7',
     title: 'Nama Koperasi',
@@ -158,13 +155,13 @@ export const TEMPLATE_QUESTIONS = [
     comment: 'Wajib diisi',
     is_mandatory: true,
     order_sequence: 1,
-    choices: [] // No choices for text
+    choices: [] 
   },
   
-  // 2. Text Question - Alamat Koperasi
+  
   {
     form_id: '',
-    type_id: '858c134a-638d-11f0-81b4-cc1531536fd7', // Text
+    type_id: '858c134a-638d-11f0-81b4-cc1531536fd7',
     category_id: '857BC61C-638D-11F0-81B4-CC1531536FD7',
     section_id: '8589D000-638D-11F0-81B4-CC1531536FD7',
     title: 'Alamat Koperasi',
@@ -175,10 +172,9 @@ export const TEMPLATE_QUESTIONS = [
     choices: []
   },
   
-  // 3. Text Question - Nomor Telepon
   {
     form_id: '',
-    type_id: '858c134a-638d-11f0-81b4-cc1531536fd7', // Text
+    type_id: '858c134a-638d-11f0-81b4-cc1531536fd7', 
     category_id: '857BC61C-638D-11F0-81B4-CC1531536FD7',
     section_id: '8589D000-638D-11F0-81B4-CC1531536FD7',
     title: 'Nomor Telepon',
@@ -189,10 +185,9 @@ export const TEMPLATE_QUESTIONS = [
     choices: []
   },
   
-  // 4. Text Question - Email
   {
     form_id: '',
-    type_id: '858c134a-638d-11f0-81b4-cc1531536fd7', // Text
+    type_id: '858c134a-638d-11f0-81b4-cc1531536fd7', 
     category_id: '857BC61C-638D-11F0-81B4-CC1531536FD7',
     section_id: '8589D000-638D-11F0-81B4-CC1531536FD7',
     title: 'Email',
@@ -203,10 +198,9 @@ export const TEMPLATE_QUESTIONS = [
     choices: []
   },
   
-  // 5. Single Choice Question - Jenis Koperasi
   {
     form_id: '',
-    type_id: '858c13d8-638d-11f0-81b4-cc1531536fd7', // Single Choice
+    type_id: '858c13d8-638d-11f0-81b4-cc1531536fd7', 
     category_id: '857BC61C-638D-11F0-81B4-CC1531536FD7',
     section_id: '8589D000-638D-11F0-81B4-CC1531536FD7',
     title: 'Jenis Koperasi',
@@ -215,18 +209,17 @@ export const TEMPLATE_QUESTIONS = [
     is_mandatory: true,
     order_sequence: 5,
     choices: [
-      '859E2003-638D-11F0-81B4-CC1531536FD7', // SNI
-      '859E1F26-638D-11F0-81B4-CC1531536FD7', // BPOM
-      '859E2045-638D-11F0-81B4-CC1531536FD7', // HACCP
-      '859E1EC8-638D-11F0-81B4-CC1531536FD7', // Halal
-      '859E1CE3-638D-11F0-81B4-CC1531536FD7'  // P-IRT
+      '859E2003-638D-11F0-81B4-CC1531536FD7', 
+      '859E1F26-638D-11F0-81B4-CC1531536FD7', 
+      '859E2045-638D-11F0-81B4-CC1531536FD7', 
+      '859E1EC8-638D-11F0-81B4-CC1531536FD7', 
+      '859E1CE3-638D-11F0-81B4-CC1531536FD7'  
     ]
   },
   
-  // 6. Multiple Choice Question - Sumber Modal
   {
     form_id: '',
-    type_id: '858c1450-638d-11f0-81b4-cc1531536fd7', // Multiple Choice
+    type_id: '858c1450-638d-11f0-81b4-cc1531536fd7', 
     category_id: '857BC61C-638D-11F0-81B4-CC1531536FD7',
     section_id: '8589D000-638D-11F0-81B4-CC1531536FD7',
     title: 'Sumber Modal',
@@ -235,19 +228,17 @@ export const TEMPLATE_QUESTIONS = [
     is_mandatory: true,
     order_sequence: 6,
     choices: [
-      '859E2003-638D-11F0-81B4-CC1531536FD7', // Modal Kerja
-      '859E1F26-638D-11F0-81B4-CC1531536FD7', // Pengembangan Usaha
-      '859E2045-638D-11F0-81B4-CC1531536FD7', // Bank Mandiri
-      '859E1EC8-638D-11F0-81B4-CC1531536FD7', // Bank BRI
-      '859E1CE3-638D-11F0-81B4-CC1531536FD7', // Bank BNI
-      '859E1FBC-638D-11F0-81B4-CC1531536FD7'  // Others
+      '859E2003-638D-11F0-81B4-CC1531536FD7', 
+      '859E1F26-638D-11F0-81B4-CC1531536FD7', 
+      '859E2045-638D-11F0-81B4-CC1531536FD7',
+      '859E1EC8-638D-11F0-81B4-CC1531536FD7', 
+      '859E1CE3-638D-11F0-81B4-CC1531536FD7',   
     ]
   },
   
-  // 7. Document Upload Question
   {
     form_id: '',
-    type_id: '858c1472-638d-11f0-81b4-cc1531536fd7', // Document Upload
+    type_id: '858c1472-638d-11f0-81b4-cc1531536fd7', 
     category_id: '857BC61C-638D-11F0-81B4-CC1531536FD7',
     section_id: '8589D000-638D-11F0-81B4-CC1531536FD7',
     title: 'Dokumen Pendukung',

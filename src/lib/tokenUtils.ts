@@ -1,4 +1,3 @@
-// Token management utilities
 
 export async function refreshAccessToken() {
   try {
@@ -27,7 +26,6 @@ export async function refreshAccessToken() {
 
     const data = await response.json()
     
-    // Update tokens in localStorage
     localStorage.setItem('access_token', data.access_token)
     if (data.refresh_token) {
       localStorage.setItem('refresh_token', data.refresh_token)
@@ -36,7 +34,6 @@ export async function refreshAccessToken() {
     return data.access_token
   } catch (error) {
     console.error('Error refreshing token:', error)
-    // Clear all tokens and redirect to login
     clearAllTokens()
     window.location.href = '/'
     throw error
@@ -49,7 +46,7 @@ export function isTokenExpired(token: string): boolean {
     const currentTime = Date.now() / 1000
     return payload.exp < currentTime
   } catch (error) {
-    return true // If we can't decode, assume expired
+    return true 
   }
 }
 
@@ -70,7 +67,6 @@ export async function fetchWithTokenRefresh(url: string, options: RequestInit = 
     throw new Error('No token available')
   }
 
-  // Add authorization header
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
@@ -82,12 +78,10 @@ export async function fetchWithTokenRefresh(url: string, options: RequestInit = 
     headers,
   })
 
-  // If 401, try to refresh token and retry
   if (response.status === 401) {
     try {
       const newToken = await refreshAccessToken()
       
-      // Retry with new token
       response = await fetch(url, {
         ...options,
         headers: {
@@ -96,7 +90,6 @@ export async function fetchWithTokenRefresh(url: string, options: RequestInit = 
         },
       })
     } catch (refreshError) {
-      // Refresh failed, user will be redirected to login
       throw refreshError
     }
   }

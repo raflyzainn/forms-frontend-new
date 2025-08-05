@@ -108,7 +108,6 @@ export default function ResponseDetailPage() {
       <HomepageHeader />
       
       <div className="max-w-6xl mx-auto px-4 pt-4 pb-8 mt-17">
-        {/* Header Section */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -128,7 +127,6 @@ export default function ResponseDetailPage() {
             </div>
           </div>
           
-          {/* Response Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
               <FiUser className="text-xl text-gray-600" />
@@ -164,13 +162,11 @@ export default function ResponseDetailPage() {
           </div>
         </div>
 
-        {/* Sections */}
         <div className="space-y-8">
           {Object.entries(groupedBySection).map(([sectionId, sectionAnswers], sectionIndex) => {
             const sectionColor = getSectionColor(sectionIndex);
             return (
               <div key={sectionId} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                {/* Section Header */}
                 <div className={`bg-gradient-to-r ${sectionColor.from} ${sectionColor.to} px-6 py-4`}>
                   <h2 className="text-xl font-bold text-white">
                     {sectionIdToName(sectionId)}
@@ -180,7 +176,6 @@ export default function ResponseDetailPage() {
                   </p>
                 </div>
                 
-                {/* Section Content */}
                 <div className="p-6">
                   <div className="space-y-8">
                     {sectionAnswers.map((answer, index) => {

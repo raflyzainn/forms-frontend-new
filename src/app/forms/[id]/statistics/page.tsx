@@ -46,18 +46,17 @@ export default function FormStatisticsPage() {
     try {
       setExporting(true)
       
-      // Capture the charts container with simplified configuration
+      
       const canvas = await html2canvas(chartsContainerRef.current, {
-        backgroundColor: '#ffffff', // Use white background instead
-        scale: 1.5, // Lower scale for better compatibility
+        backgroundColor: '#ffffff', 
+        scale: 1.5, 
         useCORS: true,
         allowTaint: true,
         logging: false,
-        removeContainer: true, // Remove temporary container
-        foreignObjectRendering: false, // Disable foreign object rendering
-        imageTimeout: 0, // No timeout for images
+        removeContainer: true, 
+        foreignObjectRendering: false, 
+        imageTimeout: 0, 
         onclone: (clonedDoc) => {
-          // Add a simple style to override problematic colors
           const style = clonedDoc.createElement('style')
           style.textContent = `
             * { 
@@ -72,7 +71,6 @@ export default function FormStatisticsPage() {
         }
       })
       
-      // Convert to blob and download
       canvas.toBlob((blob: Blob | null) => {
         if (blob) {
           const url = URL.createObjectURL(blob)
@@ -100,7 +98,6 @@ export default function FormStatisticsPage() {
     try {
       setExporting(true)
       
-      // Capture single chart with simplified configuration
       const canvas = await html2canvas(chartElement, {
         backgroundColor: '#ffffff',
         scale: 1.5,
@@ -125,13 +122,11 @@ export default function FormStatisticsPage() {
         }
       })
       
-      // Convert to blob and download
       canvas.toBlob((blob: Blob | null) => {
         if (blob) {
           const url = URL.createObjectURL(blob)
           const link = document.createElement('a')
           link.href = url
-          // Clean question title for filename
           const cleanTitle = questionTitle.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')
           link.download = `chart-${cleanTitle}-${formId}-${new Date().toISOString().split('T')[0]}.png`
           document.body.appendChild(link)

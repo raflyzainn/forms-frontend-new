@@ -25,7 +25,6 @@ export default function AddQuestionForm({
   isSubmitting,
   setIsSubmitting
 }: Props) {
-  // State untuk form pertanyaan
   const [newQuestion, setNewQuestion] = useState({
     title: '',
     description: '',
@@ -37,7 +36,6 @@ export default function AddQuestionForm({
   })
   
   
-  // State untuk pilihan (choices)
   const [allChoices, setAllChoices] = useState<{ id: string, title: string }[]>([])
   const [selectedChoiceIds, setSelectedChoiceIds] = useState<string[]>([])
   const [newChoiceTitle, setNewChoiceTitle] = useState('')
@@ -45,11 +43,9 @@ export default function AddQuestionForm({
   const [allSections, setAllSections] = useState<Section[]>([])
   const [choiceCategories, setChoiceCategories] = useState<Category[]>([])
 
-  // Cek apakah tipe pertanyaan yang dipilih adalah tipe choice
   const selectedType = STATIC_QUESTION_TYPES.find((type) => type.id === newQuestion.typeId);
   const isChoiceType = ["3", "4", "5", "6"].includes(selectedType?.type || "");
   
-  // Ambil data choices ketika tipe pertanyaan adalah choice
   useEffect(() => {
     if (isChoiceType) {
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/choices`)
@@ -59,7 +55,6 @@ export default function AddQuestionForm({
     }
   }, [isChoiceType]);
 
-  // Fetch all available sections and choice categories
   useEffect(() => {
     async function fetchData() {
       try { 
@@ -120,9 +115,7 @@ export default function AddQuestionForm({
     }
   };
   
-  // Fungsi untuk menangani perubahan pilihan choice
   const handleChoiceChange = (choiceId: string) => {
-    // Semua tipe choice bisa memilih multiple choices untuk ditambahkan ke soal
     setSelectedChoiceIds(prev => 
       prev.includes(choiceId)
         ? prev.filter(id => id !== choiceId)
@@ -130,7 +123,6 @@ export default function AddQuestionForm({
     );
   };
 
-  // Handle submitting a new question
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -139,13 +131,11 @@ export default function AddQuestionForm({
       return
     }
     
-    // Validasi choices untuk tipe pertanyaan choice
     if (isChoiceType && selectedChoiceIds.length === 0) {
       toast.error('Pilihan wajib dipilih untuk tipe pertanyaan ini');
       return;
     }
 
-    // Validasi minimal 2 choices untuk single choice types
     if ((selectedType?.type === "3" || selectedType?.type === "4") && selectedChoiceIds.length < 2) {
       toast.error('Untuk tipe Single Choice, minimal harus ada 2 pilihan');
       return;
@@ -158,7 +148,6 @@ export default function AddQuestionForm({
       const selectedCategory = categories.find(cat => cat.id === newQuestion.categoryId);
       const selectedSection = sections.find(sec => sec.id === newQuestion.sectionId);
       
-      // Buat payload untuk API createQuestion
       const payload = {
         form_id: formId,
         type_id: selectedType ? selectedType.id : newQuestion.typeId,
@@ -170,10 +159,8 @@ export default function AddQuestionForm({
         is_mandatory: newQuestion.isMandatory
       };
       
-      // Buat pertanyaan terlebih dahulu
       const question = await createQuestion(payload);
       
-      // Jika tipe pertanyaan adalah choice, map choices ke pertanyaan
       if (isChoiceType && selectedChoiceIds.length > 0) {
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${question.questionId}/choices/map`, {
           method: 'POST',
@@ -182,7 +169,6 @@ export default function AddQuestionForm({
         });
       }
       
-      // Buat objek pertanyaan baru untuk ditambahkan ke state
       const newQ = {
         questionId: question.questionId || question.id,
         title: newQuestion.title,
@@ -317,7 +303,6 @@ export default function AddQuestionForm({
           </div>
         </div>
         
-        {/* Bagian pilihan (choices) untuk tipe pertanyaan choice */}
         {isChoiceType && (
           <div className="bg-gray-50 p-4 rounded-md border border-gray-200 mt-4">
             <h4 className="text-sm font-medium text-gray-700 mb-3">Pilihan</h4>
@@ -327,7 +312,6 @@ export default function AddQuestionForm({
                 : "Pilih pilihan yang akan ditampilkan untuk Multiple Choice"}
             </p>
             
-            {/* Daftar pilihan yang tersedia */}
             <div className="space-y-2 max-h-60 overflow-y-auto mb-4 p-2">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-xs text-gray-600">
@@ -367,14 +351,11 @@ export default function AddQuestionForm({
               )}
             </div>
             
-            {/* Form untuk menambah pilihan baru */}
             <div className="mt-3 border-t border-gray-200 pt-3">
-              {/* Info kategori pilihan (hardcoded) */}
               <p className="text-xs text-gray-600 mb-3">
                 Kategori pilihan sudah ditentukan secara otomatis.
               </p>
 
-              {/* Input pilihan */}
               <div className="flex items-center">
                 <input
                   type="text"

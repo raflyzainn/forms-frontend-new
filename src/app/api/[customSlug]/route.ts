@@ -7,8 +7,7 @@ export async function GET(
   try {
     const { customSlug } = await params
     
-    // Forward the request to the backend API
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL 
     const response = await fetch(`${apiUrl}/${customSlug}`, {
       method: 'GET',
       headers: {
@@ -26,7 +25,6 @@ export async function GET(
 
     const data = await response.json()
     
-    // Return the response from backend
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error resolving custom URL:', error)

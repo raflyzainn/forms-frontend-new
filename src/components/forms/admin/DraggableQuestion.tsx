@@ -82,7 +82,6 @@ export default function DraggableQuestion({
     console.log('Copying question:', question.questionId);
     setIsCopying(true);
     try {
-      // Only call the parent's onCopy function, let parent handle the API call and toast
       onCopy();
     } catch (error) {
       console.error('Copy failed:', error);
@@ -149,7 +148,6 @@ export default function DraggableQuestion({
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-3">
-            {/* Drag Handle */}
             <div
               {...attributes}
               {...listeners}
@@ -160,12 +158,10 @@ export default function DraggableQuestion({
               <FiMove className="text-gray-400 group-hover:text-blue-600" />
             </div>
             
-            {/* Question Number */}
             <span className="font-medium text-gray-800 whitespace-nowrap text-lg">
               {index + 1}.
             </span>
             
-            {/* Question Content */}
             <div className="min-w-0 flex-1">
               <p className="font-medium text-gray-800 break-words text-lg">
                 {question.title}
@@ -180,20 +176,18 @@ export default function DraggableQuestion({
             </div>
           </div>
           
-          {/* Question Input Preview - Using QuestionInputRenderer like user page */}
           <div className="mt-4 ml-11">
             <QuestionInputRenderer
               question={question}
               name={`question-${question.questionId}`}
-              onAnswerChange={() => {}} // Empty function for read-only
-              answer={undefined} // No answer for admin preview
+              onAnswerChange={() => {}} 
+              answer={undefined} 
               nik="admin"
               formId={question.form_id || ""}
-              readOnly={true} // This makes it read-only
+              readOnly={true} 
             />
           </div>
           
-          {/* Draggable Choices Section */}
           {question.choices && question.choices.length > 0 && (
             <div className="mt-4 ml-11">
               <div className="bg-gray-50 rounded-lg p-4">
@@ -232,7 +226,6 @@ export default function DraggableQuestion({
 
         </div>
         
-        {/* Action Buttons */}
         <div 
           className="flex sm:flex-col gap-2 sm:gap-2 justify-end sm:items-end flex-shrink-0"
           onClick={(e) => e.stopPropagation()}
@@ -276,7 +269,6 @@ export default function DraggableQuestion({
         </div>
       </div>
       
-      {/* Simple Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
@@ -305,7 +297,6 @@ export default function DraggableQuestion({
         </div>
       )}
       
-      {/* Drag indicator */}
       {isDragging && (
         <div className="absolute inset-0 border-2 border-blue-400 bg-blue-50 rounded-lg pointer-events-none" />
       )}

@@ -10,7 +10,6 @@ import { getFormByToken } from '@/lib/api'
 import { getFormStatus } from '@/lib/formUtils'
 import { checkUserSubmission } from '@/lib/api'
 import { FiCheckCircle, FiEdit, FiClock } from 'react-icons/fi'
-
 interface FormTokenUserPageProps {
   params: Promise<{ formToken: string }>
 }
@@ -32,12 +31,10 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
         setLoading(true)
         const response = await getFormByToken(formToken)
         
-        // Response structure: { form: {...}, is_open: true, status: "active", ... }
         if (response.form) {
           setForm(response.form)
           setNik(localStorage.getItem('nik'))
 
-          // Check if form is expired or inactive
           const formStatus = getFormStatus(response.form)
           if (!formStatus.isActive || formStatus.isExpired) {
             const params = new URLSearchParams({
@@ -49,8 +46,7 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
             return
           }
 
-          // Check if user has already submitted
-          const storedNik = localStorage.getItem('nik')
+         const storedNik = localStorage.getItem('nik')
           if (storedNik) {
             const submission = await checkUserSubmission(response.form.id, storedNik)
             setUserSubmission(submission)
@@ -88,7 +84,6 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
     )
   }
 
-  // If user has already submitted, show edit option
   if (userSubmission) {
     return (
       <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -168,7 +163,7 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
           <div className="mt-8">
             <FormSubmissionWrapper
               questions={questions}
-              formId={form.id} // GUNAKAN form.id (UUID) untuk API calls
+              formId={form.id} 
               nik={nik}
               headerProps={{
                 title,

@@ -45,7 +45,6 @@ export default function DraggableChoice({
         isDragging ? 'opacity-50 scale-105 shadow-lg z-10' : ''
       }`}
     >
-      {/* Drag Handle */}
       <div
         {...attributes}
         {...listeners}
@@ -55,10 +54,8 @@ export default function DraggableChoice({
         <FiMove className="w-3 h-3" />
       </div>
 
-      {/* Radio Button Style */}
       <div className="w-4 h-4 rounded-full border-2 border-gray-300 flex-shrink-0"></div>
 
-      {/* Choice Content */}
       <span className="text-gray-800 flex-1">{choice.title || `Choice ${index + 1}`}</span>
     </div>
   )

@@ -23,10 +23,8 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
       try {
         setLoading(true)
         
-        // Check authentication first
         const isLoggedIn = localStorage.getItem('isLoggedIn')
         if (!isLoggedIn) {
-          // Save current URL for redirect after login
           sessionStorage.setItem('redirectAfterLogin', `/forms/token/${formToken}/admin`)
           router.push('/')
           return
@@ -35,7 +33,6 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formToken}/admin`)
         
         if (!response.ok) {
-          // If form not found or access denied, redirect to expired page
           const params = new URLSearchParams({
             title: 'Form Tidak Ditemukan',
             deadline: '',
@@ -48,7 +45,6 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
         const data = await response.json()
         setForm(data.form)
         
-        // Check if form is expired
         if (data.form.deadline) {
           const now = new Date()
           const deadline = new Date(data.form.deadline)
@@ -66,7 +62,6 @@ export default function FormTokenAdminPage({ params }: FormTokenAdminPageProps) 
         }
       } catch (err) {
         console.error('Error fetching form data:', err)
-        // If any error occurs, redirect to expired page
         const params = new URLSearchParams({
           title: 'Terjadi Kesalahan',
           deadline: '',

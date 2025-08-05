@@ -27,7 +27,6 @@ export default function UserResponsesListPage() {
     try {
       setLoading(true)
       const allSubmissions = await getFormSubmissions(formId as string)
-      // Filter submissions for current user only
       const userSubmissions = allSubmissions.filter((sub: any) => sub.nik === nik)
       setSubmissions(userSubmissions)
     } catch (err) {

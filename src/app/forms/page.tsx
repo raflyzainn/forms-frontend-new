@@ -22,7 +22,6 @@ export default function HomePage() {
   const [showCreate, setShowCreate] = useState(false)
   const router = useRouter()
 
-  // Separate forms by status
   const activeForms = forms.filter(form => {
     const status = getFormStatus(form)
     return status.isActive && !status.isExpired
@@ -55,7 +54,6 @@ export default function HomePage() {
         if (!res.ok) throw new Error('Failed to fetch forms')
         const data = await res.json()
         
-        // Fetch custom URLs for each form
         const formsWithCustomURLs = await Promise.all(
           data.map(async (form: Form) => {
             try {
@@ -63,7 +61,6 @@ export default function HomePage() {
               return formWithCustomURLs.form
             } catch (error) {
               console.error(`Failed to fetch custom URLs for form ${form.id}:`, error)
-              // Return original form with empty custom_urls if fetch fails
               return { ...form, custom_urls: [] } as FormWithCustomURLs
             }
           })

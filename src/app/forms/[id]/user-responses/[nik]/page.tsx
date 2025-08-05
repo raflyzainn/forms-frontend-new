@@ -36,7 +36,6 @@ export default function UserResponseDetailPage() {
     const userNik = localStorage.getItem('nik')
     setCurrentUserNik(userNik)
     
-    // Check if user is trying to access someone else's submission
     if (userNik && userNik !== nik) {
       setError('Anda tidak memiliki akses ke submission ini')
       return

@@ -8,8 +8,7 @@ export async function POST(
     const { id } = params
     const body = await request.json()
     
-    // Forward the request to the backend API
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
     const response = await fetch(`${apiUrl}/forms/${id}/custom-url`, {
       method: 'POST',
       headers: {

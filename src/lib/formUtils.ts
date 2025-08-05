@@ -14,25 +14,20 @@ export function getFormStatus(form: Form): FormStatus {
   const deadline = form.deadline ? new Date(form.deadline) : null
   const openedDate = form.opened_date ? new Date(form.opened_date) : null
   
-  // Check if form is active (admin setting)
   const isActive = form.is_active ?? true
   
-  // Check if form is expired (past deadline)
   const isExpired = deadline ? now > deadline : false
   
-  // Check if form is open (between opened_date and deadline)
   const isOpen = isActive && !isExpired && 
     (!openedDate || now >= openedDate) && 
     (!deadline || now <= deadline)
   
-  // Calculate days until deadline
   let daysUntilDeadline: number | null = null
   if (deadline && !isExpired) {
     const diffTime = deadline.getTime() - now.getTime()
     daysUntilDeadline = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   }
   
-  // Determine status text and color
   let statusText = 'Aktif'
   let statusColor = 'text-green-600'
   

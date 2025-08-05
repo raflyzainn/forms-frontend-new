@@ -41,13 +41,11 @@ export default function FormPage() {
   const [editingSection, setEditingSection] = useState<Section | null>(null)
   const [deletingSections, setDeletingSections] = useState<Record<string, boolean>>({})
   
-  // State untuk inline question editor
   const [isAddingQuestion, setIsAddingQuestion] = useState(false)
   const [addingQuestionAfterIndex, setAddingQuestionAfterIndex] = useState<number | null>(null)
   const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false)
   const newQuestionRef = useRef<HTMLDivElement>(null)
   
-  // State untuk inline editing
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false)
 
@@ -57,14 +55,12 @@ export default function FormPage() {
     setQuestions(initialQuestions || [])
   }, [initialQuestions])
 
-  // Load saved question order from localStorage
   useEffect(() => {
     if (formId) {
       const savedOrder = localStorage.getItem(`form-${formId}-questions-order`)
       if (savedOrder && initialQuestions) {
         try {
           const savedQuestions = JSON.parse(savedOrder)
-          // Only apply saved order if we have the same questions
           if (savedQuestions.length === initialQuestions.length) {
             setQuestions(savedQuestions)
           }
@@ -75,14 +71,12 @@ export default function FormPage() {
     }
   }, [formId, initialQuestions])
   
-  // Scroll to new question form when it appears
   useEffect(() => {
     if (isAddingQuestion && newQuestionRef.current) {
       newQuestionRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [isAddingQuestion])
 
-  // Fetch form data for deadline status
   useEffect(() => {
     const fetchFormData = async () => {
       try {
@@ -137,13 +131,11 @@ export default function FormPage() {
     }
   };
   
-  // Handle adding a new question inline
   const handleAddQuestion = (afterIndex: number | null = null) => {
     setIsAddingQuestion(true)
     setAddingQuestionAfterIndex(afterIndex)
   }
   
-  // Handle successful question creation
   const handleQuestionSuccess = (newQuestion: any) => {
     setQuestions(prev => [...prev, newQuestion])
     setIsAddingQuestion(false)
@@ -151,13 +143,10 @@ export default function FormPage() {
     toast.success('Pertanyaan berhasil ditambahkan')
   }
 
-  // Handle question reordering
   const handleReorderQuestions = async (newQuestions: Question[]) => {
     try {
-      // Update UI immediately for better UX
       setQuestions(newQuestions)
       
-      // Extract question IDs in the new order as objects with id field
       const questionOrder = newQuestions.map((q, index) => ({
         id: q.questionId,
         order_sequence: index + 1
@@ -165,10 +154,8 @@ export default function FormPage() {
       
       console.log('Sending reorder request:', { formId, questionOrder })
       
-      // Call backend API to save the new order
       await reorderQuestions(formId as string, questionOrder)
       
-      // Save to localStorage as backup
       localStorage.setItem(`form-${formId}-questions-order`, JSON.stringify(newQuestions))
       
       toast.success('Urutan pertanyaan berhasil disimpan')
@@ -182,18 +169,14 @@ export default function FormPage() {
       
       toast.error(errorMessage)
       
-      // Revert to original order on error
       setQuestions(initialQuestions || [])
     }
   }
 
-  // Handle section reordering
   const handleReorderSections = async (newSections: Section[]) => {
     try {
-      // Update UI immediately
       setSections(newSections)
       
-      // Only call API for sections that actually changed position
       const changedSections = newSections.filter((section, newIndex) => {
         const oldIndex = sections.findIndex(s => s.id === section.id)
         return oldIndex !== newIndex
@@ -202,7 +185,6 @@ export default function FormPage() {
       if (changedSections.length > 0) {
         console.log('Sending section reorder requests for:', changedSections.length, 'sections')
         
-        // Call API for each changed section with new order
         const reorderPromises = changedSections.map((section, index) => {
           const newIndex = newSections.findIndex(s => s.id === section.id)
           return reorderSections(formId as string, section.id, newIndex + 1)
@@ -221,17 +203,14 @@ export default function FormPage() {
       
       toast.error(errorMessage)
       
-      // Revert to original order on error
       setSections(sections)
     }
   }
 
-  // Handle choice reordering
   const handleReorderChoices = async (questionId: string, newChoices: Choice[]) => {
     try {
       console.log('Reordering choices for question:', questionId, newChoices)
       
-      // Update local state first for immediate UI feedback
       setQuestions(prev => prev.map(q => {
         if (q.questionId === questionId) {
           return {
@@ -245,7 +224,6 @@ export default function FormPage() {
         return q
       }))
       
-      // Call API for each choice with new order
       const reorderPromises = newChoices.map((choice, index) => {
         return reorderChoices(questionId, choice.choice_id, index + 1)
       })
@@ -256,17 +234,14 @@ export default function FormPage() {
       console.error('Failed to reorder choices:', error)
       toast.error('Gagal menyimpan urutan choices')
       
-      // Revert local state on error
       router.refresh()
     }
   }
 
-  // Handle inline editing
   const handleEditQuestion = (questionId: string) => {
     setEditingQuestionId(questionId)
   }
   
-  // Handle successful question update
   const handleQuestionUpdateSuccess = (updatedQuestion: Question) => {
     setQuestions(prev => prev.map(q => 
       q.questionId === updatedQuestion.questionId ? updatedQuestion : q
@@ -281,11 +256,9 @@ export default function FormPage() {
       await deleteQuestion(questionId);
       setQuestions(prev => prev.filter(q => q.questionId !== questionId));
       toast.success('Berhasil menghapus pertanyaan');
-      // Remove router.refresh() to avoid conflicts with state management
     } catch (err) {
       console.error('Failed to delete question:', err);
       
-      // Handle different types of errors
       let errorMessage = 'Gagal menghapus pertanyaan';
       
       if (err instanceof Error) {
@@ -296,7 +269,6 @@ export default function FormPage() {
         errorMessage = String(err.message);
       }
       
-      // Show more specific error messages
       if (errorMessage.includes('404')) {
         errorMessage = 'Pertanyaan tidak ditemukan';
       } else if (errorMessage.includes('403')) {
@@ -314,12 +286,10 @@ export default function FormPage() {
   const handleCopyQuestion = async (originalQuestionId: string) => {
     console.log('handleCopyQuestion called for:', originalQuestionId);
     try {
-      // Call the API to copy the question
       const result = await copyQuestion(originalQuestionId);
       
       if (result.message === 'Question copied successfully') {
         toast.success('Pertanyaan berhasil disalin!');
-        // Refresh the page to show the copied question
         window.location.reload();
       } else {
         toast.error('Gagal menyalin pertanyaan: Response tidak valid');
@@ -363,10 +333,8 @@ export default function FormPage() {
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto relative">
-        {/* Floating Action Button */}
         <div className="fixed bottom-6 right-6 z-[9999] pointer-events-auto">
           <div className="group relative">
-            {/* Main FAB */}
             <button 
               className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center text-white hover:scale-105 cursor-pointer"
             >
@@ -375,10 +343,8 @@ export default function FormPage() {
               </svg>
             </button>
             
-            {/* Dropdown Menu */}
             <div className="absolute bottom-14 right-0 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:translate-y-0 translate-y-2 pointer-events-auto">
               <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-1.5 min-w-[140px]">
-                {/* Add Question */}
                 <button 
                   onClick={() => handleAddQuestion()}
                   className="w-full flex items-center px-3 py-2.5 text-left hover:bg-blue-50 rounded-md transition-colors group/item cursor-pointer"
@@ -391,7 +357,6 @@ export default function FormPage() {
                   <div className="font-medium text-gray-900 text-sm">Tambah Pertanyaan</div>
                 </button>
                 
-                {/* Add Category */}
                 <button 
                   onClick={() => setShowAddCategory(true)}
                   className="w-full flex items-center px-3 py-2.5 text-left hover:bg-green-50 rounded-md transition-colors group/item cursor-pointer"
@@ -404,7 +369,6 @@ export default function FormPage() {
                   <div className="font-medium text-gray-900 text-sm">Tambah Kategori</div>
                 </button>
                 
-                {/* Add Section */}
                 <button 
                   onClick={() => setShowAddSection(true)}
                   className="w-full flex items-center px-3 py-2.5 text-left hover:bg-purple-50 rounded-md transition-colors group/item cursor-pointer"
@@ -418,7 +382,6 @@ export default function FormPage() {
                 </button>
               </div>
               
-              {/* Arrow pointing to FAB */}
               <div className="absolute top-full right-3 w-0 h-0 border-l-3 border-r-3 border-t-3 border-transparent border-t-white"></div>
             </div>
           </div>
@@ -527,7 +490,6 @@ export default function FormPage() {
           </div>
         </div>
 
-        {/* Custom URL Modal */}
         {showCustomURLModal && form && (
           <CustomURLModal
             isOpen={showCustomURLModal}

@@ -66,7 +66,6 @@ export default function DraggableSectionHeader({
         </div>
       </div>
       
-      {/* Action Buttons */}
       <div 
         className="flex gap-2 flex-shrink-0"
         onClick={(e) => e.stopPropagation()}

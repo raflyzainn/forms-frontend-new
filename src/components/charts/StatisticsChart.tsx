@@ -36,34 +36,28 @@ interface StatisticsChartProps {
 export default function StatisticsChart({
   data,
   questionTitle,
-  questionType,
   totalResponses,
   chartType = 'bar',
   textAnalysis
 }: StatisticsChartProps) {
   const [showDetails, setShowDetails] = React.useState(false);
-  // Process chart data to include text responses as separate entries
   const processedData = useMemo(() => {
     if (!textAnalysis) return data;
     
-    // Remove "Jawaban Text" from labels and data if it exists
     const textIndex = data.labels.indexOf('Jawaban Text');
     const filteredLabels = textIndex !== -1 ? data.labels.filter((_, index) => index !== textIndex) : data.labels;
     const filteredData = textIndex !== -1 ? data.datasets[0].data.filter((_, index) => index !== textIndex) : data.datasets[0].data;
     const filteredBackgroundColors = textIndex !== -1 ? data.datasets[0].backgroundColor.filter((_, index) => index !== textIndex) : data.datasets[0].backgroundColor;
     const filteredBorderColors = textIndex !== -1 ? data.datasets[0].borderColor.filter((_, index) => index !== textIndex) : data.datasets[0].borderColor;
     
-    // Add text responses as separate entries
     const newLabels = [...filteredLabels];
     const newData = [...filteredData];
     const newBackgroundColors = [...filteredBackgroundColors];
     const newBorderColors = [...filteredBorderColors];
     
-    // Add each unique text response
     Object.entries(textAnalysis.top_responses).forEach(([response, count], index) => {
       newLabels.push(`"${response}"`);
       newData.push(count);
-      // Use different colors for text responses
       const textColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
       const colorIndex = index % textColors.length;
       newBackgroundColors.push(textColors[colorIndex]);
@@ -151,7 +145,6 @@ export default function StatisticsChart({
         {renderChart()}
       </div>
       
-      {/* Toggle button for details */}
       <div className="mt-4 flex justify-center">
         <button
           onClick={() => setShowDetails(!showDetails)}
@@ -169,7 +162,6 @@ export default function StatisticsChart({
         </button>
       </div>
       
-      {/* Summary table and Text Analysis */}
       {showDetails && (
         <div className="mt-6 space-y-6">
           <div>
@@ -210,7 +202,6 @@ export default function StatisticsChart({
             </div>
           </div>
           
-          {/* Text Analysis */}
           {textAnalysis && (
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-3">Text Responses Analysis</h4>

@@ -7,9 +7,7 @@ export const api = axios.create({
   },
 });
 
-{ /* Application Api Function */}
 
-// Refresh token function
 export async function refreshAccessToken() {
   try {
     const refreshToken = localStorage.getItem('refresh_token')
@@ -101,19 +99,7 @@ api.interceptors.response.use(
   }
 )
 
-export async function login(nik: string, password: string) {
-  const response = await api.post('/login', { nik, password })
-  return response.data
-}
-
-export async function logout() {
-  return api.post('/logout')
-}
-
-export async function fetchCurrentUser() {
-  const response = await api.get('/user')
-  return response.data
-}
+{/* Bagian Pertanyaan */}
 
 export async function fetchQuestionsByFormId(formId: string) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions?form_id=${formId}`)
@@ -240,18 +226,17 @@ export async function getSections(formId: string) {
   
   console.log('Raw sections response:', response)
   
-  // Transform response to match expected format
   if (response.success && response.data) {
     const transformedSections = response.data
       .map((item: any) => ({
         id: item.section_id,
         category_id: item.section.category_id,
         section: item.section.section,
-        title: item.section.title || item.section.section, // Use section name as title if title is null
+        title: item.section.title || item.section.section, 
         description: item.section.description,
         order_sequence: parseInt(item.order_sequence) || 0
       }))
-      .sort((a, b) => a.order_sequence - b.order_sequence) // Sort by order_sequence ascending
+      .sort((a, b) => a.order_sequence - b.order_sequence) 
     
     console.log('Transformed sections:', transformedSections)
     return transformedSections
@@ -274,7 +259,6 @@ export async function getAllSections() {
     const response = await res.json()
     console.log('Raw all sections response:', response)
     
-    // API returns array directly, not wrapped in success/data
     if (!Array.isArray(response)) {
       console.error('Unexpected response format:', response)
       return []
@@ -284,7 +268,7 @@ export async function getAllSections() {
       id: item.id,
       category_id: item.category_id,
       section: item.section,
-      title: item.title || item.section, // Use section name if title is null
+      title: item.title || item.section, 
       description: item.description,
       order_sequence: item.order_sequence || 0
     }))
@@ -340,6 +324,65 @@ export async function updateSection(id: string, data: Partial<{
   }
 
   return res.json()
+}
+
+export async function reorderSections(formId: string, sectionId: string, orderSequence: number): Promise<void> {
+  try {
+    console.log('Reordering section:', { formId, sectionId, orderSequence })
+    
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token')
+    if (!token) {
+      throw new Error('Token tidak ditemukan')
+    }
+    
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+    const url = `${apiUrl}/forms/${formId}/sections/reorder`
+    
+    console.log('API URL:', apiUrl)
+    console.log('Full URL:', url)
+    console.log('Request payload:', { form_id: formId, section_id: sectionId, order_sequence: orderSequence })
+    
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ 
+        form_id: formId, 
+        section_id: sectionId, 
+        order_sequence: orderSequence 
+      }),
+    })
+
+    console.log('Reorder sections response status:', res.status)
+
+    if (!res.ok) {
+      const contentType = res.headers.get('content-type')
+      console.log('Response content-type:', contentType)
+      
+      if (contentType?.includes('application/json')) {
+        try {
+          const error = await res.json()
+          console.log('Error response:', error)
+          throw new Error(error.message || error.error || 'Gagal mengubah urutan section')
+        } catch (parseError) {
+          console.log('Parse error:', parseError)
+          throw new Error('Gagal mengubah urutan section')
+        }
+      } else {
+        const text = await res.text()
+        console.log('Error text:', text)
+        throw new Error(text || 'Gagal mengubah urutan section')
+      }
+    }
+
+    console.log('Sections reordered successfully')
+  } catch (error) {
+    console.error('Reorder sections error:', error)
+    throw error
+  }
 }
 
 {/* Bagian Category */}
@@ -449,19 +492,16 @@ export async function deleteQuestion(id: string): Promise<void> {
     console.log('Delete response status:', res.status);
     console.log('Delete response headers:', Object.fromEntries(res.headers.entries()));
 
-    // Handle successful deletion (204 No Content)
     if (res.status === 204) {
       console.log('Question deleted successfully (204)');
       return;
     }
 
-    // Handle other successful responses
     if (res.ok) {
       console.log('Question deleted successfully');
       return;
     }
 
-    // Handle different error status codes
     if (res.status === 404) {
       throw new Error('Pertanyaan tidak ditemukan');
     }
@@ -470,7 +510,6 @@ export async function deleteQuestion(id: string): Promise<void> {
       throw new Error('Tidak memiliki izin untuk menghapus pertanyaan');
     }
 
-    // For 500 and other errors, try to get the actual error message from server
     const contentType = res.headers.get('content-type');
     console.log('Response content-type:', contentType);
     
@@ -496,12 +535,10 @@ export async function deleteQuestion(id: string): Promise<void> {
   } catch (error) {
     console.error('Delete question error:', error);
     
-    // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Koneksi jaringan bermasalah');
     }
     
-    // Re-throw other errors
     if (error instanceof Error) {
       throw error;
     }
@@ -541,10 +578,8 @@ export async function copyQuestion(questionId: string): Promise<any> {
     const result = await res.json();
     console.log('Question copied successfully:', result);
     
-    // Check if the copy operation was successful but copied_question is null
     if (result.message === 'Question copied successfully' && result.copied_question === null) {
       console.warn('Copy operation succeeded but copied_question is null. This might indicate a backend issue.');
-      // Still consider it successful since the message says it was copied
       return result;
     }
     
@@ -600,7 +635,6 @@ export async function reorderQuestions(formId: string, questionOrder: Array<{id:
       throw new Error('Token tidak ditemukan')
     }
     
-    // Get API URL with fallback
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
     const url = `${apiUrl}/forms/${formId}/questions/reorder`
     
@@ -640,64 +674,7 @@ export async function reorderQuestions(formId: string, questionOrder: Array<{id:
   }
 }
 
-export async function reorderSections(formId: string, sectionId: string, orderSequence: number): Promise<void> {
-  try {
-    console.log('Reordering section:', { formId, sectionId, orderSequence })
-    
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token')
-    if (!token) {
-      throw new Error('Token tidak ditemukan')
-    }
-    
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
-    const url = `${apiUrl}/forms/${formId}/sections/reorder`
-    
-    console.log('API URL:', apiUrl)
-    console.log('Full URL:', url)
-    console.log('Request payload:', { form_id: formId, section_id: sectionId, order_sequence: orderSequence })
-    
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ 
-        form_id: formId, 
-        section_id: sectionId, 
-        order_sequence: orderSequence 
-      }),
-    })
-
-    console.log('Reorder sections response status:', res.status)
-
-    if (!res.ok) {
-      const contentType = res.headers.get('content-type')
-      console.log('Response content-type:', contentType)
-      
-      if (contentType?.includes('application/json')) {
-        try {
-          const error = await res.json()
-          console.log('Error response:', error)
-          throw new Error(error.message || error.error || 'Gagal mengubah urutan section')
-        } catch (parseError) {
-          console.log('Parse error:', parseError)
-          throw new Error('Gagal mengubah urutan section')
-        }
-      } else {
-        const text = await res.text()
-        console.log('Error text:', text)
-        throw new Error(text || 'Gagal mengubah urutan section')
-      }
-    }
-
-    console.log('Sections reordered successfully')
-  } catch (error) {
-    console.error('Reorder sections error:', error)
-    throw error
-  }
-}
+{ /* Bagian Choices */ }
 
 export async function reorderChoices(questionId: string, choiceId: string, orderSequence: number): Promise<void> {
   try {
@@ -763,7 +740,6 @@ export async function getChoicesByQuestionId(questionId: string) {
     const response = await res.json()
     console.log('Raw choices response:', response)
     
-    // API returns success/data wrapper
     if (response.success && response.data) {
       const transformedChoices = response.data.map((item: any) => ({
         id: item.id,
@@ -783,6 +759,47 @@ export async function getChoicesByQuestionId(questionId: string) {
     console.error('Get choices error:', error)
     throw error
   }
+}
+
+export async function createChoice(data: {
+  category_id: string
+  title: string
+  description?: string
+  comment?: string
+}) {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  
+  console.log('createChoice payload:', data);
+  
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/choice/add`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal menambahkan pilihan')
+  }
+  return res.json() 
+}
+
+export async function deleteChoice(choiceId: string) {
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/choice/${choiceId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal menghapus pilihan')
+  }
+  return res.json()
 }
 
 {/* Bagian Jawaban */}
@@ -818,8 +835,6 @@ export async function uploadDocument({
   return await res.json()
 }
 
-
-
 export async function submitAnswers({
   nik,
   formId,
@@ -849,6 +864,8 @@ export async function submitAnswers({
 
   return await res.json()
 }
+
+{ /* Bagian Document */}
 
 export async function uploadTempDocument({
   file,
@@ -959,10 +976,8 @@ export async function exportFormToCSV(formId: string) {
     throw new Error(error.message || 'Gagal export CSV')
   }
 
-  // Get the blob from response
   const blob = await res.blob()
   
-  // Create download link
   const url = window.URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -1031,7 +1046,6 @@ export async function updateSubmission(submissionId: string, answers: any[]) {
   return res.json();
 }
 
-// Update individual answer - backend will automatically handle temp uploads
 export async function updateAnswer(answerId: string, answerData: {
   value?: string | null;
   choices?: string[];
@@ -1052,14 +1066,13 @@ export async function updateAnswer(answerId: string, answerData: {
   return res.json();
 }
 
-
+{ /* Bagian Template Questions */ }
 
 export async function createTemplateQuestions(formId: string, templateQuestions: any[]) {
   console.log('Creating template questions for form:', formId)
   
   try {
     for (const template of templateQuestions) {
-      // Step 1: Create question without choices
       const questionData = {
         form_id: formId,
         type_id: template.type_id,
@@ -1092,7 +1105,6 @@ export async function createTemplateQuestions(formId: string, templateQuestions:
       const createdQuestion = await res.json()
       console.log('Question created successfully:', createdQuestion)
       
-      // Step 2: Map choices if question has choices
       if (template.choices && template.choices.length > 0) {
         console.log('Mapping choices to question:', createdQuestion.questionId || createdQuestion.id)
         
@@ -1158,7 +1170,6 @@ export async function getFormWithCustomURLs(formId: string) {
   }
   const data = await res.json()
   
-  // Transform response to match our expected format
   return {
     form: {
       ...data.form,
@@ -1197,6 +1208,8 @@ export async function deleteCustomURL(formId: string, customURLId: string) {
   return res.json()
 }
 
+{/* Bagian Statistik Form dan Pertanyaan */ }
+
 export async function getFormStatistics(formId: string) {
   const token = localStorage.getItem('access_token') || localStorage.getItem('token')
   const res = await fetch(`/api/forms/${formId}/statistics`, {
@@ -1227,50 +1240,8 @@ export async function getQuestionStatistics(formId: string, questionId: string) 
   return res.json()
 }
 
-// Choice API functions
-export async function createChoice(data: {
-  category_id: string
-  title: string
-  description?: string
-  comment?: string
-}) {
-  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
-  
-  // Debug: Log payload yang akan dikirim
-  console.log('createChoice payload:', data);
-  
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/choice/add`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  })
-  if (!res.ok) {
-    const error = await res.json()
-    throw new Error(error.message || 'Gagal menambahkan pilihan')
-  }
-  return res.json() 
-}
+{ /* Bagian Form Token User */ }
 
-export async function deleteChoice(choiceId: string) {
-  const token = localStorage.getItem('access_token') || localStorage.getItem('token')
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/choice/${choiceId}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  })
-  if (!res.ok) {
-    const error = await res.json()
-    throw new Error(error.message || 'Gagal menghapus pilihan')
-  }
-  return res.json()
-}
-
-// Fetch form data by token (for /forms/token/[formToken]/user)
 export async function getFormByToken(formToken: string) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formToken}/user`)
   if (!res.ok) {
@@ -1279,6 +1250,8 @@ export async function getFormByToken(formToken: string) {
   }
   return res.json()
 }
+
+{ /* Bagian Cek Submission User */ }
 
 export async function checkUserSubmission(formId: string, nik: string) {
   try {

@@ -83,7 +83,6 @@ export default function OAuthCallbackPage() {
           return;
         }
 
-        // Check if there's a pending redirect after login
         const redirectAfterLogin = sessionStorage.getItem('redirectAfterLogin')
         
         if (redirectAfterLogin) {

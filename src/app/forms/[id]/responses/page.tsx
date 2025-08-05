@@ -53,7 +53,6 @@ export default function ResponsesListPage() {
       setError(null)
       setShowExportModal(false)
       
-      // Kirim request tanpa menunggu response (fire and forget)
       exportFormToCSVEmail(formId as string, email)
         .then(() => {
           toast.success('CSV berhasil dikirim ke email Anda!')
@@ -177,7 +176,6 @@ export default function ResponsesListPage() {
         </div>
       </div>
 
-      {/* Export CSV Modal */}
       <ExportCSVModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
@@ -187,7 +185,6 @@ export default function ResponsesListPage() {
         isEmailExporting={false}
       />
 
-      {/* Toast Container */}
       <ToastContainer
         position="top-right"
         autoClose={5000}
