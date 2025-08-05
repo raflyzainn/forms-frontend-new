@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter, usePathname  } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { getSubmissionById, updateSubmission, updateAnswer, getTempUploads, deleteTempUpload } from '@/lib/api'
 import { useFetchFormData } from '@/components/fetch/useFetchFormData'
 import FormSubmissionWrapper from '@/components/forms/user/FormSubmissionWrapper'
@@ -40,7 +40,6 @@ interface SubmissionData {
 
 export default function EditSubmissionPage() {
   const params = useParams()
-  const pathname = usePathname()
   const router = useRouter()
   const formId = params.id as string
   const submissionId = params.submissionId as string
@@ -72,6 +71,7 @@ export default function EditSubmissionPage() {
       if (response.success && response.data) {
         const data = response.data
         
+        // Check if user is authorized to edit this submission
         if (data.nik !== localStorage.getItem('nik')) {
           setError('Anda tidak memiliki akses untuk mengedit submission ini')
           return
@@ -94,8 +94,8 @@ export default function EditSubmissionPage() {
       console.log('Responses received:', responses);
       console.log('Submission data:', submissionData);
       
+      // Transform responses to match API format
       const answers = responses.map(response => {
-
         console.log('Processing response:', response);
         
         const existingAnswer = submissionData?.answers.find(
@@ -110,33 +110,37 @@ export default function EditSubmissionPage() {
           throw new Error(`Answer tidak ditemukan untuk question ${response.questionId}`)
         }
 
+        // Handle documents properly - extract document paths
         let documents: string[] = []
         if (response.documents && Array.isArray(response.documents)) {
           console.log('Processing documents:', response.documents);
           documents = response.documents.map((doc: any) => {
+            // If it's an existing document object, use the document_id
             if (doc && typeof doc === 'object' && doc.document_id) {
               return doc.document_id
             }
+            // If it's a string (temp upload ID), use it directly
             if (typeof doc === 'string') {
               return doc
             }
+            // If it's an object with id but no document_id (temp upload), use the id
             if (doc && typeof doc === 'object' && doc.id) {
               return doc.id
             }
             return ''
           }).filter(Boolean)
         } else if (response.fileId) {
+          // If there's a fileId from temp upload
           documents = [response.fileId]
         }
         
+        // Only preserve existing documents if explicitly no new documents in response
+        // This allows empty documents array to clear existing documents
         console.log('Final documents for answer:', documents);
 
+        // Handle choices properly - match the format used in regular form submission
         let choices: string[] = []
-
-        let value = response.value !== undefined
-        ? response.value    
-        : (existingAnswer.value ?? null);
-
+        let value = response.value || existingAnswer.value || null
         
         if (response.choiceIds && Array.isArray(response.choiceIds)) {
           choices = response.choiceIds
@@ -149,19 +153,19 @@ export default function EditSubmissionPage() {
           console.log('Preserving existing choices:', choices);
         }
         
+        // For "with text" questions, preserve existing text value if not explicitly changed
         const question = questions.find(q => q.questionId === response.questionId);
         const questionType = question?.type?.name;
         
-        if (questionType === 'Single Item Choice with Text') {
-          if (response.choiceId && response.choiceId !== '') {
-            choices = [response.choiceId]
-            console.log('Single Item Choice with Text - using choiceId:', response.choiceId);
-          } else if (response.value && response.value.toString().trim() !== '') {
-            choices = []
-            console.log('Single Item Choice with Text - using text value, clearing choices');
-          }
+        if ((questionType === 'Single Item Choice with Text' || questionType === 'Multiple Choice with Text') && 
+            response.value === undefined && existingAnswer.value) {
+          // If user didn't change the text field, preserve the existing text value
+          value = existingAnswer.value;
+          console.log('Preserving existing text value for', questionType, ':', value);
         }
         
+        // For Multiple Choice with Text, we need to handle the text value separately
+        // The backend expects choices array and value separately
         console.log('Final processed answer:', {
           answer_id: existingAnswer.answer_id,
           value: value,
@@ -177,88 +181,76 @@ export default function EditSubmissionPage() {
         }
       })
 
+      // Use the correct backend flow: call updateAnswer for each answer
+      // Backend will automatically handle temp uploads
       console.log('Using correct backend flow with updateAnswer API');
       
       const updatePromises = answers.map(async (answer, index) => {
-        // …
-        const originalResponse = responses[index]
-        const question = questions.find(q => q.questionId === originalResponse.questionId)
-        const questionType = question?.type?.name
-
-        let formattedAnswer: any = {}
-
-        if (questionType === 'Multiple Choice') {
-          formattedAnswer = { choices: answer.choices || [] }
-        } else if (questionType === 'Multiple Choice with Text') {
-          const choiceData: Array<string | { choiceId: string | null; value: string }> = [];
-        
-          (answer.choices || []).forEach(id => {
-            choiceData.push(id);
-          });
-        
-          if (answer.value) {
-            choiceData.push({
-              choiceId: null,
-              value: answer.value
-            });
-          }
-        
-          formattedAnswer = { choices: choiceData };
-        } else if (questionType === 'Single Item Choice with Text') {
-          const hasText = answer.value && answer.value.trim() !== '';
-          const hasChoice = answer.choices?.[0] && answer.choices[0] !== '';
-        
-          if (hasText) {
-            // Kirim sebagai TEXT
-            formattedAnswer = {
-              choices: [
-                { choiceId: null, value: answer.value }
-              ],
-              value: answer.value
-            };
-          } else if (hasChoice) {
-            // Kirim sebagai PILIHAN
-            formattedAnswer = {
-              choices: [
-                { choiceId: answer.choices[0], value: '' }
-              ],
-              value: ''
-            };
-          } else {
-            // Kosong semua
-            formattedAnswer = {
-              choices: [],
-              value: ''
-            };
-          }
-        }  else if (questionType === 'Single Item Choice') {
-            formattedAnswer = {
-            choices: answer.choices?.[0] ? [answer.choices[0]] : []
-          }
-        } else if (questionType === 'Document Upload') {
-          formattedAnswer = { value: answer.value || null }
-        } else {
-          formattedAnswer = {
+        try {
+          console.log(`Updating answer ${answer.answer_id}:`, {
             value: answer.value,
-            choices: answer.choices
+            choices: answer.choices,
+            documents: answer.documents
+          });
+          
+          // Get the original response to find question type
+          const originalResponse = responses[index];
+          const question = questions.find(q => q.questionId === originalResponse.questionId);
+          const questionType = question?.type?.name;
+          
+          let formattedAnswer: any = {};
+          
+          if (questionType === 'Multiple Choice') {
+            // For Multiple Choice, use choices array like in Postman
+            formattedAnswer = { choices: answer.choices || [] };
+          } else if (questionType === 'Multiple Choice with Text') {
+            // For Multiple Choice with Text, use choices array + value
+            formattedAnswer = { 
+              choices: answer.choices || [],
+              value: answer.value || null
+            };
+          } else if (questionType === 'Single Item Choice with Text') {
+            // For Single Item Choice with Text, use choiceId + value
+            formattedAnswer = { 
+              choiceId: answer.choices?.[0] || null,
+              value: answer.value || null
+            };
+          } else if (questionType === 'Document Upload') {
+            // For Document Upload, only send value (fileId)
+            formattedAnswer = { value: answer.value || null };
+          } else {
+            // For other types, use the standard format
+            formattedAnswer = {
+              value: answer.value,
+              choices: answer.choices
+            };
           }
+          
+          // Call updateAnswer API - backend will handle temp uploads automatically
+          const result = await updateAnswer(answer.answer_id, formattedAnswer);
+          
+          console.log(`Successfully updated answer ${answer.answer_id}:`, result);
+          return result;
+        } catch (error) {
+          console.error(`Failed to update answer ${answer.answer_id}:`, error);
+          throw error;
         }
-
-        const result = await updateAnswer(answer.answer_id, formattedAnswer)
-        return result;
-      })
-
+      });
       
       await Promise.all(updatePromises);
-      
       console.log('All answers updated successfully using updateAnswer API');
       
+      // Note: We don't need to call updateSubmission anymore since we're using updateAnswer API
+      // Backend will automatically handle temp uploads and update the submission
+      
+      // Cleanup temp uploads after successful update
       try {
         const session_id = localStorage.getItem('session_id')
         if (session_id) {
           const tempUploads = await getTempUploads(session_id)
           const files = Array.isArray(tempUploads) ? tempUploads : tempUploads.files || []
           
+          // Delete all temp uploads for this form
           for (const file of files) {
             if (file.form_id === formId) {
               await deleteTempUpload(file.id)
@@ -267,6 +259,7 @@ export default function EditSubmissionPage() {
         }
       } catch (cleanupError) {
         console.error('Failed to cleanup temp uploads:', cleanupError)
+        // Don't show error to user as submission was successful
       }
       
       toast.success('Submission berhasil diperbarui!')
@@ -317,15 +310,19 @@ export default function EditSubmissionPage() {
     )
   }
 
+  // Transform submission data to match form format
   const preFilledAnswers = submissionData.answers.map(answer => {
     console.log('Processing answer for prefill:', answer);
     
+    // Try to find question by ID first
     let question = questions.find(q => q.questionId === answer.question_id)
     
+    // If not found by exact ID, try to find by title or other attributes
     if (!question) {
       console.warn(`Question not found for answer.question_id: ${answer.question_id}`);
       console.log('Available question IDs:', questions.map(q => q.questionId));
       
+      // Try to find by question title if available
       if (answer.question_title) {
         question = questions.find(q => q.title === answer.question_title);
         if (question) {
@@ -334,8 +331,10 @@ export default function EditSubmissionPage() {
       }
     }
     
+    // If still no question found, create a minimal mapping to preserve data
     if (!question) {
       console.warn(`Creating fallback mapping for question_id: ${answer.question_id}`);
+      // Don't return null - preserve the answer data even if question mapping fails
       return {
         questionId: answer.question_id,
         value: answer.value || null,
@@ -431,6 +430,7 @@ export default function EditSubmissionPage() {
           </div>
         </div>
 
+        {/* Form */}
         {questions.length > 0 && currentUserNik && (
           <FormSubmissionWrapper
             questions={questions}

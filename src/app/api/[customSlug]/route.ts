@@ -7,8 +7,8 @@ export async function GET(
   try {
     const { customSlug } = await params
     
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL 
-    const response = await fetch(`${apiUrl}/${customSlug}`, {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const response = await fetch(`${apiUrl}/custom-url/${customSlug}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

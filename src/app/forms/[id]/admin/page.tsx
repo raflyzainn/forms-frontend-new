@@ -565,13 +565,6 @@ export default function FormPage() {
           onCreated={(newCategory) => setCategories((prev) => [...prev, newCategory])}
         />
       )}
-
-
-
-
-
-
-      
     </div>
   )
 }

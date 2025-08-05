@@ -1,83 +1,97 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { use } from 'react'
+import { useEffect, useState, use } from 'react'
+import { useRouter } from 'next/navigation'
 import HomepageHeader from '@/components/common/HomepageHeader'
-import { useFetchFormData } from '@/components/fetch/useFetchFormData'
 import FormSubmissionWrapper from '@/components/forms/user/FormSubmissionWrapper'
-import { getFormByToken } from '@/lib/api'
+import { resolveCustomURL, checkUserSubmission } from '@/lib/api'
 import { getFormStatus } from '@/lib/formUtils'
-import { checkUserSubmission } from '@/lib/api'
+import { useFetchFormData } from '@/components/fetch/useFetchFormData'
 import { FiCheckCircle, FiEdit, FiClock } from 'react-icons/fi'
+
 interface FormTokenUserPageProps {
   params: Promise<{ formToken: string }>
 }
 
 export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
   const { formToken } = use(params)
+  const [checkingSubmission, setCheckingSubmission] = useState(true)
   const router = useRouter()
   const [form, setForm] = useState<any>(null)
   const [nik, setNik] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
   const [userSubmission, setUserSubmission] = useState<any>(null)
-  const [checkingSubmission, setCheckingSubmission] = useState(true)
+  const [checking, setChecking] = useState(true)
 
-  const { title, description, comment, questions, loading: questionsLoading } = useFetchFormData(form?.id || '')
+  // ✅ fetch data only when form.id is available
+  const {
+    title,
+    description,
+    sections,
+    comment,
+    questions,
+    loading: loadingFormData,
+  } = useFetchFormData(form?.id) // tambahkan condition fetch
 
   useEffect(() => {
-    const fetchFormData = async () => {
+    const fetchForm = async () => {
       try {
-        setLoading(true)
-        const response = await getFormByToken(formToken)
-        
-        if (response.form) {
-          setForm(response.form)
-          setNik(localStorage.getItem('nik'))
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forms/${formToken}/user`)
+        if (!res.ok) throw new Error('Gagal mengambil form')
 
-          const formStatus = getFormStatus(response.form)
-          if (!formStatus.isActive || formStatus.isExpired) {
-            const params = new URLSearchParams({
-              title: response.form.title,
-              deadline: response.form.deadline || '',
-              message: response.form.deadline_message || ''
-            })
-            router.push(`/forms/expired?${params.toString()}`)
-            return
-          }
+        const response = await res.json()
 
-         const storedNik = localStorage.getItem('nik')
-          if (storedNik) {
-            const submission = await checkUserSubmission(response.form.id, storedNik)
-            setUserSubmission(submission)
-          }
-        } else {
-          router.push('/')
-        }
-      } catch (error) {
-        console.error('Error fetching form data:', error)
+        const formData = response.form // karena field-nya `form`, bukan `response.data.form`
+        setForm(formData)
+
+        // lanjut logic kamu di bawah...
+
+      } catch (err) {
+        console.error('Gagal resolve form:', err)
         router.push('/')
       } finally {
-        setLoading(false)
-        setCheckingSubmission(false)
+        setChecking(false)
       }
     }
 
-    fetchFormData()
+    fetchForm()
   }, [formToken, router])
 
-  if (loading || checkingSubmission || (form && questionsLoading)) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedNik = localStorage.getItem('nik')
+      console.log('[DEBUG] NIK ditemukan di localStorage:', storedNik)
+      setNik(storedNik)
+    }
+  }, [])
+
+  useEffect(() => {
+    const fetchUserSubmission = async () => {
+      if (!form?.id || !nik) return
+  
+      try {
+        const submission = await checkUserSubmission(form.id, nik)
+        setUserSubmission(submission)
+      } catch (err) {
+        console.error('Gagal cek submission user:', err)
+      } finally {
+        setCheckingSubmission(false) // ✅ selesai cek
+      }
+    }
+  
+    fetchUserSubmission()
+  }, [form?.id, nik])  
+  
+
+  if (checking || loadingFormData || loadingFormData) {
     return (
       <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
-          <HomepageHeader
-            showResponsesButton={false}
-            showCreateFormButton={false}
-            isAdminPage={false}
-          />
+          <HomepageHeader showResponsesButton={false} showCreateFormButton={false} isAdminPage={false} />
           <div className="bg-white p-8 rounded-lg shadow-lg text-center mt-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Memeriksa status form...</p>
+            <p className="text-gray-600">
+              {checkingSubmission ? 'Memeriksa apakah Anda sudah mengisi form...' : 'Memeriksa status form...'}
+            </p>
           </div>
         </div>
       </div>
@@ -88,12 +102,8 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
     return (
       <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
-          <HomepageHeader
-            showResponsesButton={false}
-            showCreateFormButton={false}
-            isAdminPage={false}
-          />
-          
+          <HomepageHeader showResponsesButton={false} showCreateFormButton={false} isAdminPage={false} />
+
           <div className="bg-white rounded-lg shadow-lg p-8 text-center mt-8">
             <div className="mb-8">
               <FiCheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -117,7 +127,7 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
                   })}
                 </p>
               </div>
-              
+
               <div className="bg-green-50 p-6 rounded-lg border border-green-100">
                 <FiCheckCircle className="w-8 h-8 text-green-500 mx-auto mb-3" />
                 <p className="text-sm text-gray-600 mb-1">Status</p>
@@ -133,7 +143,7 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
                 <FiEdit className="w-5 h-5" />
                 Edit Submission
               </button>
-              
+
               <button
                 onClick={() => router.push(`/forms/${form.id}/user-responses`)}
                 className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
@@ -148,38 +158,38 @@ export default function FormTokenUserPage({ params }: FormTokenUserPageProps) {
     )
   }
 
-  if (loading || !form) return <p className="p-6">Loading...</p>
-
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
-        <HomepageHeader
-          showResponsesButton={false}
-          showCreateFormButton={false}
-          isAdminPage={false}
-        />
+        <HomepageHeader showResponsesButton={false} showCreateFormButton={false} isAdminPage={false} />
 
-        {questions.length > 0 && nik && form ? (
+        {!nik ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Memuat NIK dari localStorage...</p>
+          </div>
+        ) : form && questions.length > 0 ? (
           <div className="mt-8">
             <FormSubmissionWrapper
               questions={questions}
-              formId={form.id} 
+              formId={form.id}
+              sections={sections}
               nik={nik}
-              headerProps={{
-                title,
-                description,
-                comment,
-              }}
+              headerProps={{ title, description, comment }}
             />
           </div>
         ) : (
           <div className="bg-white p-8 rounded-lg shadow-lg text-center mt-8">
             <p className="text-gray-500">
-              {!form ? 'Form tidak ditemukan.' : !questions.length ? 'Pertanyaan tidak tersedia.' : 'NIK tidak tersedia.'}
+              {!form
+                ? 'Form tidak ditemukan.'
+                : !questions.length
+                ? 'Pertanyaan tidak tersedia.'
+                : 'NIK tidak tersedia.'}
             </p>
           </div>
         )}
+
       </div>
     </div>
   )
-} 
+}

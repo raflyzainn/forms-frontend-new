@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'react-toastify'
 import { useDebounce } from 'use-debounce';
 
-import FormHeader from '@/components/forms/FormHeader'                    
+import FormHeader from '@/components/forms/FormHeader'                    // ← import it here
 import FormQuestionGroup from '@/components/forms/user/QuestionGroupUser'
 import { STATIC_QUESTION_TYPES } from '@/lib/staticTypes'
-import { Question } from '@/types'
+import { Question, Section } from '@/types'
 import { submitAnswers, uploadDocument, saveFormDraft, getFormDraft, deleteFormDraft, getTempUploads, deleteTempUpload } from '@/lib/api'
 interface Props {
   questions: Question[]
+  sections: Section[] // ✅ Tambah ini
   nik: string
   formId: string
   headerProps: {
@@ -35,6 +36,7 @@ interface Props {
 
 export default function FormSubmissionWrapper({ 
   questions, 
+  sections,
   nik, 
   formId, 
   headerProps, 
@@ -120,6 +122,7 @@ export default function FormSubmissionWrapper({
           await saveQueueRef.current
         }
 
+        // Create new save promise
         const savePromise = saveFormDraft({
           nik,
           form_id: formId,
@@ -149,21 +152,9 @@ export default function FormSubmissionWrapper({
   ) => {
     let updatedAnswer = { ...answer }
   
-    if (questionType === 'Single Item Choice with Text') {
-      const hasText = updatedAnswer.value && updatedAnswer.value.toString().trim() !== ''
-      const hasChoice = updatedAnswer.choiceId && updatedAnswer.choiceId !== ''
-    
-      if (hasChoice && hasText) {
-        // Prioritaskan choice, hapus text
-        delete updatedAnswer.value
-      } else if (hasText && !hasChoice) {
-        delete updatedAnswer.choiceId
-      }
-    }
-    
-  
-    if (updatedAnswer?.fileId) {
-      updatedAnswer.documents = [updatedAnswer.fileId]
+    // Jika user mengunggah file baru, override dokumen lama
+    if (answer?.fileId) {
+      updatedAnswer.documents = [answer.fileId]
     }
   
     setAnswers((prev) => ({
@@ -171,7 +162,6 @@ export default function FormSubmissionWrapper({
       [questionId]: { type: questionType, answer: updatedAnswer },
     }))
   }
-  
 
   const handleSubmit = async () => {
     setSubmitting(true)
@@ -187,6 +177,7 @@ export default function FormSubmissionWrapper({
         return
       }
 
+      // If in edit mode and custom onSubmit is provided, use it
       if (isEditMode && onSubmit) {
         const responses = Object.entries(answers).map(([questionId, { type, answer }]) => {
           const response: any = {
@@ -200,10 +191,12 @@ export default function FormSubmissionWrapper({
             response.documents = answer.documents
           }
         
+          // Always include value for "with text" questions, even if it's null
           if ('value' in answer) {
             response.value = answer.value
           }
           
+          // Always include choiceIds for multiple choice questions
           if ('choiceIds' in answer) {
             response.choiceIds = answer.choiceIds
           }
@@ -228,10 +221,13 @@ export default function FormSubmissionWrapper({
       for (const [questionId, { type, answer }] of Object.entries(answers)) {
         const typeObj = STATIC_QUESTION_TYPES.find(t => t.type === type)
         if ((type === "7" || typeObj?.name === 'Document Upload')) {
+          // Handle document uploads
           if (answer?.fileId) {
+            // If there's a fileId, it means a file was uploaded
+            // We need to submit this as a normal response with the fileId
             normalResponses.push({
               questionId,
-              questionType: 7, 
+              questionType: 7, // Document Upload type
               answer: { value: answer.fileId }
             })
           }
@@ -255,6 +251,7 @@ export default function FormSubmissionWrapper({
               break
             case "4": // Single Item Choice with Text
               questionTypeNumber = 4
+              // Always send choiceId, and send value if it exists and is not empty
               const textValue = answer?.value && answer.value.toString().trim() !== '' ? answer.value : null;
               formattedAnswer = { 
                 choiceId: answer?.choiceId || '', 
@@ -269,12 +266,14 @@ export default function FormSubmissionWrapper({
               questionTypeNumber = 6
               const multipleChoiceValues: (string | { choiceId: string | null; value: string })[] = []
               
+              // Add selected choice IDs as strings
               if (answer?.choiceIds && Array.isArray(answer.choiceIds)) {
                 answer.choiceIds.forEach((choiceId: string) => {
                   multipleChoiceValues.push(choiceId)
                 })
               }
               
+              // Add text value as object (only if exists and not empty)
               if (answer?.value && answer.value.toString().trim() !== '') {
                 multipleChoiceValues.push({
                   choiceId: null,
@@ -305,6 +304,8 @@ export default function FormSubmissionWrapper({
         })
       }
 
+      // Document uploads are now handled as normal responses with fileId
+
       try {
         const session_id = localStorage.getItem('session_id');
         if (session_id) {
@@ -324,6 +325,7 @@ export default function FormSubmissionWrapper({
         console.error('Failed to clean up temp uploads', err);
       }
 
+      // Wait for any pending auto-save to complete before deleting draft
       if (saveQueueRef.current) {
         try {
           await saveQueueRef.current
@@ -332,21 +334,24 @@ export default function FormSubmissionWrapper({
         }
       }
 
+      // Add retry mechanism for draft deletion
       let retryCount = 0
       const maxRetries = 3
       
       while (retryCount < maxRetries) {
         try {
           await deleteFormDraft({ nik, form_id: formId })
-          break 
+          break // Success, exit retry loop
         } catch (err) {
           retryCount++
           console.error(`Draft deletion attempt ${retryCount} failed:`, err)
           
           if (retryCount < maxRetries) {
+            // Wait before retry (exponential backoff)
             await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
           } else {
             console.error('Failed to delete draft after all retries')
+            // Don't fail the form submission if draft deletion fails
           }
         }
       }
@@ -380,6 +385,7 @@ export default function FormSubmissionWrapper({
 
       <FormQuestionGroup
         questions={questions}
+        sections={sections}
         onAnswerChange={handleAnswerChange}
         answers={answers}
         nik={nik}

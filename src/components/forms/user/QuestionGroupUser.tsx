@@ -1,12 +1,13 @@
 'use client'
 
-import { Question } from '@/types'
+import { Question, Section } from '@/types'
 import { useMemo } from 'react'
 import QuestionInputRenderer from '@/components/forms/QuestionInputRenderer'
 import { getSectionColor } from '@/lib/staticTypes'
 
 interface Props {
   questions: Question[]
+  sections: Section[] // ✅ ini penting
   onAnswerChange: (questionId: string, questionType: string, answer: any) => void
   answers: Record<string, { type: string; answer: any }>
   nik: string
@@ -21,23 +22,30 @@ type GroupedQuestions = Record<
   }
 >
 
-export default function FormQuestionGroup({ questions, onAnswerChange, answers, nik, formId }: Props) {
+export default function FormQuestionGroup({ questions, sections, onAnswerChange, answers, nik, formId }: Props) {
   const groupedSections = useMemo(() => {
     const result: GroupedQuestions = {}
-
+    const safeSections = sections || [] // 🛡️ handle undefined
+  
     questions.forEach((q) => {
       const sectionId = q.section?.id || 'unknown'
       if (!result[sectionId]) {
+        const actualSection = safeSections.find(s => s.id === sectionId)
         result[sectionId] = {
-          section: q.section,
+          section: actualSection || q.section,
           questions: []
         }
       }
       result[sectionId].questions.push(q)
     })
-
-    return result
-  }, [questions])
+  
+    return Object.values(result).sort((a, b) => {
+      const aOrder = a.section?.order_sequence ?? 0
+      const bOrder = b.section?.order_sequence ?? 0
+      return aOrder - bOrder
+    })
+  }, [questions, sections])
+  
 
   return (
     <div>
